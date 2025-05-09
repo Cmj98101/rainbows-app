@@ -4,11 +4,12 @@ import Test from "@/models/Test";
 
 export async function GET(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const test = await Test.findById(params.id);
+    const param = await params;
+    const test = await Test.findById(param.id);
     if (!test) {
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
