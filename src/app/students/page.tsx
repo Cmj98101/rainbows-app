@@ -13,7 +13,7 @@ interface Student {
 }
 
 async function getStudents() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`, {
+  const res = await fetch(`/api/students`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch students");
