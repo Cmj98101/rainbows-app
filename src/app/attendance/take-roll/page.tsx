@@ -1,0 +1,199 @@
+"use client";
+
+import { useEffect, useState } from "react";
+
+interface Student {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  attendance: { date: string; present: boolean }[];
+}
+
+interface AttendanceRecord {
+  studentId: string;
+  date: string;
+  present: boolean;
+}
+
+function getTodayISO() {
+  const today = new Date();
+  return today.toISOString().split("T")[0];
+}
+
+export default function TakeRollPage() {
+  const [students, setStudents] = useState<Student[]>([]);
+  const [attendance, setAttendance] = useState<Record<string, boolean>>({});
+  const [date, setDate] = useState(getTodayISO());
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const fetchAttendance = async () => {
+      setLoading(true);
+      setError("");
+      setSuccess("");
+      try {
+        const res = await fetch(
+          `/api/attendance?startDate=${date}&endDate=${date}`
+        );
+        if (!res.ok) throw new Error("Failed to fetch attendance");
+        const data: Student[] = await res.json();
+        console.log("Fetched students with attendance:", data); // Debug log
+        setStudents(data);
+        const att: Record<string, boolean> = {};
+        data.forEach((student) => {
+          console.log(`\nStudent _id: ${student._id}`);
+          console.log("Attendance array:", student.attendance);
+          console.log("Selected date:", date);
+          const record = student.attendance.find((a) => {
+            const rawDate = a.date;
+            const recordDate = new Date(a.date).toISOString().split("T")[0];
+            const selectedDate = new Date(date).toISOString().split("T")[0];
+            const isMatch = recordDate === selectedDate;
+            console.log(
+              `  Record raw date: ${rawDate}, recordDate: ${recordDate}, selectedDate: ${selectedDate}, match: ${isMatch}`
+            );
+            return isMatch;
+          });
+          if (record) {
+            // Safely access present value for both plain objects and Mongoose docs
+            let presentValue = record.present;
+            if (
+              typeof presentValue === "undefined" &&
+              typeof record === "object" &&
+              "_doc" in record &&
+              record._doc !== null &&
+              typeof record._doc === "object" &&
+              "present" in (record._doc as any)
+            ) {
+              presentValue = (record._doc as any).present;
+            }
+            att[student._id] = presentValue;
+          }
+        });
+        console.log("Mapped attendance state for UI:", att); // Debug log
+        setAttendance(att);
+      } catch (err) {
+        setError("Failed to load attendance");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAttendance();
+  }, [date]);
+
+  const handleAttendanceChange = (studentId: string, present: boolean) => {
+    setAttendance((prev) => ({ ...prev, [studentId]: present }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setSuccess("");
+    try {
+      const records: AttendanceRecord[] = students.map((student) => ({
+        studentId: student._id,
+        date,
+        present: attendance[student._id] === true,
+      }));
+      console.log("Submitting attendance records:", records); // Debug log
+      const res = await fetch("/api/attendance", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(records),
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        console.error("Attendance save error:", errorData);
+        throw new Error("Failed to save attendance");
+      }
+      setSuccess("Attendance saved!");
+    } catch (err) {
+      setError("Failed to save attendance");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-2xl font-bold mb-6">Take Attendance</h1>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Date
+          </label>
+          <input
+            type="date"
+            value={date}
+            onChange={(e) => setDate(e.target.value)}
+            className="rounded border-gray-300 px-2 py-1"
+          />
+        </div>
+        <div className="bg-white shadow rounded-lg p-6">
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th colSpan={2}>Attendance</th>
+              </tr>
+            </thead>
+            <tbody>
+              {students.map((student) => (
+                <tr key={student._id}>
+                  <td>
+                    {student.firstName} {student.lastName}
+                  </td>
+                  <td colSpan={2}>
+                    <div className="btn-group">
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${
+                          attendance[student._id] === true
+                            ? "btn-primary"
+                            : "btn-outline"
+                        }`}
+                        onClick={() =>
+                          handleAttendanceChange(student._id, true)
+                        }
+                      >
+                        Present
+                      </button>
+                      <button
+                        type="button"
+                        className={`btn btn-sm ${
+                          attendance[student._id] === false ||
+                          attendance[student._id] === undefined
+                            ? "btn-error"
+                            : "btn-outline"
+                        }`}
+                        onClick={() =>
+                          handleAttendanceChange(student._id, false)
+                        }
+                      >
+                        Absent
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        {error && <div className="text-red-600">{error}</div>}
+        {success && <div className="text-green-600">{success}</div>}
+        <div className="flex justify-end">
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            disabled={loading}
+          >
+            {loading ? "Saving..." : "Save Attendance"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
