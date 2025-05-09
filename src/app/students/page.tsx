@@ -1,13 +1,23 @@
 import Link from "next/link";
-import connectToDatabase from "@/lib/db";
-import Student from "@/models/Student";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import DeleteStudentIcon from "@/components/DeleteStudentIcon";
 
+interface Student {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  parentName: string;
+  parentRelationship: string;
+  email: string;
+  phone: string;
+}
+
 async function getStudents() {
-  await connectToDatabase();
-  const students = await Student.find({}).sort({ lastName: 1, firstName: 1 });
-  return students;
+  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/students`, {
+    cache: "no-store",
+  });
+  if (!res.ok) throw new Error("Failed to fetch students");
+  return res.json() as Promise<Student[]>;
 }
 
 export default async function StudentsPage() {
