@@ -2,7 +2,7 @@ import Link from "next/link";
 import TestListClient from "@/components/TestListClient";
 
 async function getTests() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/tests`, {
+  const res = await fetch(`/api/tests`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch tests");

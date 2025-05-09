@@ -3,7 +3,7 @@ import Link from "next/link";
 import QuickAttendanceView from "@/components/QuickAttendanceView";
 
 async function getDashboardData() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/dashboard`, {
+  const res = await fetch(`/api/dashboard`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch dashboard data");
