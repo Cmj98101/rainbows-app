@@ -6,10 +6,14 @@ const attendanceSchema = new mongoose.Schema({
 });
 
 const testResultSchema = new mongoose.Schema({
+  testId: { type: mongoose.Schema.Types.ObjectId, ref: "Test", required: true },
   testName: { type: String, required: true },
   date: { type: Date, required: true },
-  passed: { type: Boolean, required: true },
-  score: { type: Number },
+  status: {
+    type: String,
+    enum: ["passed", "failed", "absent"],
+    required: true,
+  },
 });
 
 const guardianSchema = new mongoose.Schema({

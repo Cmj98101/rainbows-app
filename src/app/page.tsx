@@ -45,9 +45,9 @@ export default async function Home() {
             <Link href="/students/add" className="btn btn-secondary">
               Add New Student
             </Link>
-            <Link href="/tests/new" className="btn btn-accent">
+            {/* <Link href="/tests/new" className="btn btn-accent">
               Record Test Results
-            </Link>
+            </Link> */}
           </div>
           <QuickAttendanceView />
         </main>

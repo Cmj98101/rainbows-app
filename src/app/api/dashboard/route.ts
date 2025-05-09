@@ -27,15 +27,17 @@ export async function GET() {
 
     // Get test pass rate
     const studentsWithTests = students.filter(
-      (student) => student.tests && student.tests.length > 0
+      (student) => student.testResults && student.testResults.length > 0
     );
     const totalTests = studentsWithTests.reduce(
-      (acc, student) => acc + student.tests.length,
+      (acc, student) => acc + student.testResults.length,
       0
     );
     const passedTests = studentsWithTests.reduce(
       (acc, student) =>
-        acc + student.tests.filter((test: any) => test.passed).length,
+        acc +
+        student.testResults.filter((test: any) => test.status === "passed")
+          .length,
       0
     );
     const testPassRate =

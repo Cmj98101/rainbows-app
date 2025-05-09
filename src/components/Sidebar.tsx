@@ -28,12 +28,12 @@ export function Sidebar() {
           Tests
         </Link>
       </li>
-      <li>
+      {/* <li>
         <Link href="/reports">
           <ChartBarIcon className="h-5 w-5" />
           Reports
         </Link>
-      </li>
+      </li> */}
 
       <li className="menu-title mt-4">Quick Actions</li>
       <li>
@@ -41,7 +41,7 @@ export function Sidebar() {
           Take Roll
         </Link>
       </li>
-      <li>
+      <li className="mt-3">
         <Link href="/students/add" className="btn btn-secondary">
           Add Student
         </Link>
