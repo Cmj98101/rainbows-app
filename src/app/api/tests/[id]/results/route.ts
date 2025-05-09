@@ -1,16 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import connectDB from "@/lib/db";
 import Student from "@/models/Student";
 import Test from "@/models/Test";
 
 export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
     const { results } = await request.json();
-    const testId = params.id;
+    const param = await params;
+    const testId = param.id;
     console.log("Received results for test:", testId, results); // Debug log
     const test = await Test.findById(testId);
     if (!test) {
