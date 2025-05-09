@@ -2,7 +2,10 @@ import Link from "next/link";
 import TestListClient from "@/components/TestListClient";
 
 async function getTests() {
-  const res = await fetch(`/api/tests`, {
+  const baseUrl =
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : "";
+
+  const res = await fetch(`${baseUrl}/api/tests`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch tests");
@@ -13,14 +16,19 @@ export default async function TestsPage() {
   const tests = await getTests();
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="p-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Tests</h1>
-        <Link href="/tests/add" className="btn btn-primary">
-          Add Test
+        <Link href="/tests/new" className="btn btn-primary">
+          Add New Test
         </Link>
       </div>
-      <TestListClient tests={tests} />
+
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <TestListClient tests={tests} />
+        </div>
+      </div>
     </div>
   );
 }

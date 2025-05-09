@@ -13,7 +13,10 @@ interface Student {
 }
 
 async function getStudents() {
-  const res = await fetch(`/api/students`, {
+  const baseUrl =
+    process.env.NODE_ENV === "development" ? "http://localhost:3000" : "";
+
+  const res = await fetch(`${baseUrl}/api/students`, {
     cache: "no-store",
   });
   if (!res.ok) throw new Error("Failed to fetch students");
