@@ -24,13 +24,14 @@ export async function GET(
 
 export async function PUT(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
+    const param = await params;
     const { name, date } = await request.json();
     const test = await Test.findByIdAndUpdate(
-      params.id,
+      param.id,
       { name, date },
       { new: true }
     );
@@ -48,11 +49,12 @@ export async function PUT(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectDB();
-    const test = await Test.findByIdAndDelete(params.id);
+    const param = await params;
+    const test = await Test.findByIdAndDelete(param.id);
     if (!test) {
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
