@@ -3,14 +3,17 @@ import connectDB from "@/lib/db";
 import Student from "@/models/Student";
 import Test from "@/models/Test";
 
-export async function POST(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+type RouteContext = {
+  params: {
+    id: string;
+  };
+};
+
+export async function POST(request: NextRequest, context: RouteContext) {
   try {
     await connectDB();
     const { results } = await request.json();
-    const testId = params.id;
+    const testId = context.params.id;
     console.log("Received results for test:", testId, results); // Debug log
     const test = await Test.findById(testId);
     if (!test) {
