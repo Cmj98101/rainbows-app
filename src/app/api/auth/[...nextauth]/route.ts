@@ -1,23 +1,33 @@
 import NextAuth, { DefaultSession } from "next-auth";
+import type { JWT } from "next-auth/jwt";
 import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
+import { NextAuthOptions } from "next-auth";
 import { signInLimiter, checkRateLimit } from "@/lib/rateLimiter";
 
 // Extend the built-in session types
 declare module "next-auth" {
-  interface User {
-    role?: string;
-  }
-  interface Session {
+  interface Session extends DefaultSession {
     user: {
-      role?: string;
+      id: string;
+      role: string;
     } & DefaultSession["user"];
+  }
+
+  interface User {
+    role: string;
   }
 }
 
-const handler = NextAuth({
+declare module "next-auth/jwt" {
+  interface JWT {
+    role: string;
+  }
+}
+
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -42,26 +52,25 @@ const handler = NextAuth({
           }
 
           await connectDB();
-
           const user = await User.findOne({ email: credentials.email });
 
           if (!user) {
             throw new Error("No user found with this email");
           }
 
-          const isPasswordValid = await bcrypt.compare(
+          const isValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
 
-          if (!isPasswordValid) {
+          if (!isValid) {
             throw new Error("Invalid password");
           }
 
           return {
             id: user._id.toString(),
-            name: user.name,
             email: user.email,
+            name: user.name,
             role: user.role,
           };
         } catch (error) {
@@ -91,7 +100,9 @@ const handler = NextAuth({
   session: {
     strategy: "jwt",
   },
+  secret: process.env.NEXTAUTH_SECRET,
   debug: process.env.NODE_ENV === "development",
-});
+};
 
+const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };
