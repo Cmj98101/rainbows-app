@@ -3,19 +3,13 @@ import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import DeleteStudentIcon from "@/components/DeleteStudentIcon";
-
-interface Student {
-  _id: string;
-  name: string;
-  grade: string;
-  teacher: string;
-}
+import { Student } from "@/types/student";
 
 async function getStudents() {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+      : `https://${process.env.VERCEL_URL}`;
 
   const res = await fetch(`${baseUrl}/api/students`, {
     cache: "no-store",
@@ -57,10 +51,10 @@ export default async function StudentsPage() {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Grade
+                Guardian
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Teacher
+                Phone
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
@@ -68,35 +62,44 @@ export default async function StudentsPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {students.map((student) => (
-              <tr key={student._id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {student.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{student.grade}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{student.teacher}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link
-                    href={`/students/${student._id}`}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    View
-                  </Link>
-                  <Link
-                    href={`/students/${student._id}/edit`}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    Edit
-                  </Link>
-                </td>
-              </tr>
-            ))}
+            {students.map((student) => {
+              const primaryGuardian = student.guardians[0];
+              return (
+                <tr key={student._id}>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {`${student.firstName} ${student.lastName}`}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {primaryGuardian
+                        ? `${primaryGuardian.name} (${primaryGuardian.relationship})`
+                        : "No guardian"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-500">
+                      {primaryGuardian?.phone || "No phone"}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <Link
+                      href={`/students/${student._id}`}
+                      className="text-indigo-600 hover:text-indigo-900 mr-4"
+                    >
+                      View
+                    </Link>
+                    <Link
+                      href={`/students/${student._id}/edit`}
+                      className="text-indigo-600 hover:text-indigo-900"
+                    >
+                      Edit
+                    </Link>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

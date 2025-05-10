@@ -13,7 +13,7 @@ async function getTests() {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
+      : `https://${process.env.VERCEL_URL}`;
 
   const res = await fetch(`${baseUrl}/api/tests`, {
     cache: "no-store",
