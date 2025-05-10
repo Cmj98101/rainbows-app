@@ -61,18 +61,27 @@ export async function GET() {
       totalTests > 0 ? Math.round((passedTests / totalTests) * 100) : 0;
     console.log(`Test pass rate: ${testPassRate}%`);
 
-    return NextResponse.json({
+    const response = {
       totalStudents,
       todayAttendanceRate,
       testPassRate,
       recentActivity: [], // We'll implement this later
-    });
+    };
+    console.log("Sending response:", response);
+    return NextResponse.json(response);
   } catch (error) {
     console.error("Error in dashboard API:", error);
+    // Log the full error details
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+      console.error("Error stack:", error.stack);
+    }
     return NextResponse.json(
       {
         error: "Failed to fetch dashboard data",
         details: error instanceof Error ? error.message : "Unknown error",
+        stack: error instanceof Error ? error.stack : undefined,
       },
       { status: 500 }
     );

@@ -1,102 +1,104 @@
 import Link from "next/link";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import DeleteStudentIcon from "@/components/DeleteStudentIcon";
 
 interface Student {
   _id: string;
-  firstName: string;
-  lastName: string;
-  parentName: string;
-  parentRelationship: string;
-  email: string;
-  phone: string;
+  name: string;
+  grade: string;
+  teacher: string;
 }
 
 async function getStudents() {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : "";
+      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
 
   const res = await fetch(`${baseUrl}/api/students`, {
     cache: "no-store",
   });
-  if (!res.ok) throw new Error("Failed to fetch students");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch students");
+  }
+
   return res.json() as Promise<Student[]>;
 }
 
 export default async function StudentsPage() {
+  const session = await getServerSession();
+
+  if (!session) {
+    redirect("/auth/signin");
+  }
+
   const students = await getStudents();
 
   return (
-    <div className="p-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Students</h1>
-        <Link href="/students/add" className="btn btn-primary">
-          Add New Student
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h1 className="text-3xl font-bold">Students</h1>
+        <Link
+          href="/students/new"
+          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+        >
+          Add Student
         </Link>
       </div>
 
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body">
-          <div className="overflow-x-auto">
-            <table className="table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Parent/Guardian</th>
-                  <th>Contact</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student._id}>
-                    <td>
-                      {student.firstName} {student.lastName}
-                    </td>
-                    <td>
-                      {student.parentName}
-                      <br />
-                      <span className="text-sm text-gray-500">
-                        {student.parentRelationship}
-                      </span>
-                    </td>
-                    <td>
-                      {student.email}
-                      <br />
-                      {student.phone}
-                    </td>
-                    <td>
-                      <div className="flex gap-2">
-                        <Link
-                          href={`/students/${student._id}`}
-                          className="btn btn-ghost btn-sm"
-                          title="View Details"
-                        >
-                          <EyeIcon className="h-4 w-4" />
-                        </Link>
-                        <Link
-                          href={`/students/${student._id}/edit`}
-                          className="btn btn-ghost btn-sm"
-                          title="Edit Student"
-                        >
-                          <PencilIcon className="h-4 w-4" />
-                        </Link>
-                        <DeleteStudentIcon
-                          studentId={student._id.toString()}
-                          studentName={`${student.firstName} ${student.lastName}`}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+      <div className="bg-white shadow-md rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Grade
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Teacher
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {students.map((student) => (
+              <tr key={student._id}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm font-medium text-gray-900">
+                    {student.name}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{student.grade}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-500">{student.teacher}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <Link
+                    href={`/students/${student._id}`}
+                    className="text-indigo-600 hover:text-indigo-900 mr-4"
+                  >
+                    View
+                  </Link>
+                  <Link
+                    href={`/students/${student._id}/edit`}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    Edit
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
     </div>
   );

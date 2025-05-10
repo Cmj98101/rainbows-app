@@ -1,25 +1,33 @@
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import QuickAttendanceView from "@/components/QuickAttendanceView";
+import { Suspense } from "react";
+import { getServerSession } from "next-auth";
+import { redirect } from "next/navigation";
 
 async function getDashboardData() {
   const baseUrl =
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
-      : process.env.NEXT_PUBLIC_VERCEL_URL
-      ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`
-      : "";
+      : `https://${process.env.NEXT_PUBLIC_VERCEL_URL}`;
 
   const res = await fetch(`${baseUrl}/api/dashboard`, {
     cache: "no-store",
   });
-  if (!res.ok) throw new Error("Failed to fetch dashboard data");
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch dashboard data");
+  }
+
   return res.json();
 }
 
 export default async function Home() {
-  const { totalStudents, todayAttendanceRate, testPassRate } =
-    await getDashboardData();
+  const session = await getServerSession();
+
+  if (!session) {
+    redirect("/auth/signin");
+  }
 
   return (
     <div className="drawer lg:drawer-open">
@@ -64,6 +72,27 @@ export default async function Home() {
       <div className="drawer-side">
         <label htmlFor="drawer" className="drawer-overlay"></label>
         <Sidebar />
+      </div>
+    </div>
+  );
+}
+
+async function DashboardContent() {
+  const data = await getDashboardData();
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Total Students</h2>
+        <p className="text-3xl font-bold">{data.totalStudents}</p>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Today's Attendance</h2>
+        <p className="text-3xl font-bold">{data.todayAttendanceRate}%</p>
+      </div>
+      <div className="bg-white p-6 rounded-lg shadow">
+        <h2 className="text-lg font-semibold mb-2">Test Pass Rate</h2>
+        <p className="text-3xl font-bold">{data.testPassRate}%</p>
       </div>
     </div>
   );
