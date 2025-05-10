@@ -29,6 +29,8 @@ export default async function Home() {
     redirect("/auth/signin");
   }
 
+  const data = await getDashboardData();
+
   return (
     <div className="drawer lg:drawer-open">
       <input id="drawer" type="checkbox" className="drawer-toggle" />
@@ -40,15 +42,15 @@ export default async function Home() {
           <div className="stats shadow mb-4">
             <div className="stat">
               <div className="stat-title">Total Students</div>
-              <div className="stat-value">{totalStudents}</div>
+              <div className="stat-value">{data.totalStudents}</div>
             </div>
             <div className="stat">
               <div className="stat-title">Today's Attendance</div>
-              <div className="stat-value">{todayAttendanceRate}%</div>
+              <div className="stat-value">{data.todayAttendanceRate}%</div>
             </div>
             <div className="stat">
               <div className="stat-title">Test Pass Rate</div>
-              <div className="stat-value">{testPassRate}%</div>
+              <div className="stat-value">{data.testPassRate}%</div>
             </div>
           </div>
 
