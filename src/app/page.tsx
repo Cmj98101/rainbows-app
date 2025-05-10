@@ -10,12 +10,13 @@ async function getDashboardData() {
     process.env.NODE_ENV === "development"
       ? "http://localhost:3000"
       : `https://${process.env.VERCEL_URL}`;
-
+  console.log("baseUrl", baseUrl);
   const res = await fetch(`${baseUrl}/api/dashboard`, {
     cache: "no-store",
   });
 
   if (!res.ok) {
+    console.log("baseUrl", baseUrl);
     throw new Error("Failed to fetch dashboard data");
   }
 

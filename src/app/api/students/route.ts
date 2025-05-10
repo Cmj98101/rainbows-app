@@ -6,17 +6,16 @@ export async function GET() {
   try {
     console.log("Connecting to database...");
     await connectDB();
-    console.log("Fetching students...");
-    const students = await Student.find({}).sort({ lastName: 1, firstName: 1 });
+    console.log("Database connected, fetching students...");
+
+    const students = await Student.find({}).lean();
     console.log(`Found ${students.length} students`);
+
     return NextResponse.json(students);
   } catch (error) {
     console.error("Error in GET /api/students:", error);
     return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Failed to fetch students",
-      },
+      { error: "Failed to fetch students" },
       { status: 500 }
     );
   }

@@ -35,12 +35,19 @@ async function connectDB() {
     };
 
     console.log("Connecting to MongoDB...");
-    cached.promise = mongoose
-      .connect(MONGODB_URI as string, opts)
-      .then((mongoose) => {
-        console.log("MongoDB connected successfully");
-        return mongoose;
-      });
+    console.log("MongoDB URI:", MONGODB_URI?.substring(0, 20) + "..."); // Log partial URI for debugging
+
+    try {
+      cached.promise = mongoose
+        .connect(MONGODB_URI as string, opts)
+        .then((mongoose) => {
+          console.log("MongoDB connected successfully");
+          return mongoose;
+        });
+    } catch (error) {
+      console.error("MongoDB connection error:", error);
+      throw error;
+    }
   }
 
   try {
