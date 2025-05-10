@@ -4,22 +4,18 @@ import { redirect } from "next/navigation";
 import { EyeIcon, PencilIcon } from "@heroicons/react/24/outline";
 import DeleteStudentIcon from "@/components/DeleteStudentIcon";
 import { Student } from "@/types/student";
+import connectDB from "@/lib/db";
+import StudentModel from "@/models/Student";
 
 async function getStudents() {
-  const baseUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : `https://${process.env.VERCEL_URL}`;
-
-  const res = await fetch(`${baseUrl}/api/students`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
+  try {
+    await connectDB();
+    const students = await StudentModel.find({}).lean();
+    return students as unknown as Student[];
+  } catch (error) {
+    console.error("Error fetching students:", error);
     throw new Error("Failed to fetch students");
   }
-
-  return res.json() as Promise<Student[]>;
 }
 
 export default async function StudentsPage() {

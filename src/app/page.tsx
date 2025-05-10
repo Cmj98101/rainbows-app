@@ -4,23 +4,38 @@ import QuickAttendanceView from "@/components/QuickAttendanceView";
 import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import connectDB from "@/lib/db";
+import Student from "@/models/Student";
+import Attendance from "@/models/Attendance";
+import Test from "@/models/Test";
 
 async function getDashboardData() {
-  const baseUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : `https://${process.env.VERCEL_URL}`;
-  console.log("baseUrl", baseUrl);
-  const res = await fetch(`${baseUrl}/api/dashboard`, {
-    cache: "no-store",
-  });
+  try {
+    await connectDB();
 
-  if (!res.ok) {
-    console.log("baseUrl", baseUrl);
+    const [totalStudents, todayAttendance, tests] = await Promise.all([
+      Student.countDocuments(),
+      Attendance.findOne({ date: new Date().toISOString().split("T")[0] }),
+      Test.find().sort({ date: -1 }).limit(1),
+    ]);
+
+    const todayAttendanceRate = todayAttendance
+      ? (todayAttendance.present.length / totalStudents) * 100
+      : 0;
+
+    const testPassRate = tests[0]
+      ? (tests[0].passCount / tests[0].totalCount) * 100
+      : 0;
+
+    return {
+      totalStudents,
+      todayAttendanceRate: Math.round(todayAttendanceRate),
+      testPassRate: Math.round(testPassRate),
+    };
+  } catch (error) {
+    console.error("Error fetching dashboard data:", error);
     throw new Error("Failed to fetch dashboard data");
   }
-
-  return res.json();
 }
 
 export default async function Home() {

@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
+import connectDB from "@/lib/db";
+import Test from "@/models/Test";
 
 interface Test {
   _id: string;
@@ -10,20 +12,14 @@ interface Test {
 }
 
 async function getTests() {
-  const baseUrl =
-    process.env.NODE_ENV === "development"
-      ? "http://localhost:3000"
-      : `https://${process.env.VERCEL_URL}`;
-
-  const res = await fetch(`${baseUrl}/api/tests`, {
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
+  try {
+    await connectDB();
+    const tests = await Test.find({}).sort({ date: -1 }).lean();
+    return tests as unknown as Test[];
+  } catch (error) {
+    console.error("Error fetching tests:", error);
     throw new Error("Failed to fetch tests");
   }
-
-  return res.json() as Promise<Test[]>;
 }
 
 export default async function TestsPage() {
