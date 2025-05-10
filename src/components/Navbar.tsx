@@ -2,6 +2,7 @@
 
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
+import { Bars3Icon } from "@heroicons/react/24/outline";
 
 export default function Navbar() {
   const { data: session } = useSession();
@@ -10,7 +11,13 @@ export default function Navbar() {
     <nav className="bg-white shadow-lg">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex">
+          <div className="flex items-center">
+            <label
+              htmlFor="drawer"
+              className="btn btn-ghost drawer-button lg:hidden mr-2"
+            >
+              <Bars3Icon className="h-6 w-6" />
+            </label>
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-indigo-600">
                 Rainbows App
@@ -37,12 +44,6 @@ export default function Navbar() {
                 <span className="text-gray-700">
                   {session.user?.name || session.user?.email}
                 </span>
-                <button
-                  onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-                  className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
-                >
-                  Sign out
-                </button>
               </div>
             )}
           </div>

@@ -32,7 +32,7 @@ export default async function StudentsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Students</h1>
         <Link
-          href="/students/new"
+          href="/students/add"
           className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
         >
           Add Student

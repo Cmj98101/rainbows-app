@@ -1,10 +1,26 @@
+"use client";
+
 import Link from "next/link";
+import { signOut } from "next-auth/react";
 import {
   UserGroupIcon,
   CalendarIcon,
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
+  ArrowRightOnRectangleIcon,
 } from "@heroicons/react/24/outline";
+
+function SignOutButton() {
+  return (
+    <button
+      onClick={() => signOut({ callbackUrl: "/auth/signin" })}
+      className="text-red-600 hover:text-red-700"
+    >
+      <ArrowRightOnRectangleIcon className="h-5 w-5" />
+      Sign Out
+    </button>
+  );
+}
 
 export function Sidebar() {
   return (
@@ -45,6 +61,11 @@ export function Sidebar() {
         <Link href="/students/add" className="btn btn-secondary">
           Add Student
         </Link>
+      </li>
+
+      <li className="menu-title mt-4">Account</li>
+      <li>
+        <SignOutButton />
       </li>
     </ul>
   );

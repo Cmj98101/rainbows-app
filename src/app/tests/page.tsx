@@ -36,7 +36,7 @@ export default async function TestsPage() {
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Tests</h1>
         <Link
-          href="/tests/new"
+          href="/tests/add"
           className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
         >
           Add Test
@@ -79,7 +79,7 @@ export default async function TestsPage() {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <Link
-                    href={`/tests/${test._id}`}
+                    href={`/tests/${test._id}/results`}
                     className="text-indigo-600 hover:text-indigo-900 mr-4"
                   >
                     View
