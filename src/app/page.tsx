@@ -1,7 +1,6 @@
 import { Sidebar } from "@/components/Sidebar";
 import Link from "next/link";
 import QuickAttendanceView from "@/components/QuickAttendanceView";
-import { Suspense } from "react";
 import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
 import connectDB from "@/lib/db";
