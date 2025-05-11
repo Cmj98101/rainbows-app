@@ -32,69 +32,52 @@ export default async function TestsPage() {
   const tests = await getTests();
 
   return (
-    <div className="space-y-6">
+    <div className="max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Tests</h1>
-        <Link
-          href="/tests/add"
-          className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-        >
+        <h1 className="text-2xl font-bold">Tests</h1>
+        <Link href="/tests/add" className="btn btn-primary">
           Add Test
         </Link>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Name
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Pass Rate
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {tests.map((test) => (
-              <tr key={test._id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900">
-                    {test.name}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">
-                    {new Date(test.date).toLocaleDateString()}
-                  </div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-500">{test.passRate}%</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <Link
-                    href={`/tests/${test._id}/results`}
-                    className="text-indigo-600 hover:text-indigo-900 mr-4"
-                  >
-                    View
-                  </Link>
-                  <Link
-                    href={`/tests/${test._id}/edit`}
-                    className="text-indigo-600 hover:text-indigo-900"
-                  >
-                    Edit
-                  </Link>
-                </td>
+      <div className="card bg-base-100 shadow-xl">
+        <div className="overflow-x-auto">
+          <table className="table w-full">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Date</th>
+                <th>Pass Rate</th>
+                <th className="text-right">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tests.map((test) => (
+                <tr key={test._id}>
+                  <td className="font-medium">{test.name}</td>
+                  <td>{new Date(test.date).toLocaleDateString()}</td>
+                  <td>{test.passRate}%</td>
+                  <td className="text-right">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        href={`/tests/${test._id}/results`}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        View
+                      </Link>
+                      <Link
+                        href={`/tests/${test._id}/edit`}
+                        className="btn btn-ghost btn-sm"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );

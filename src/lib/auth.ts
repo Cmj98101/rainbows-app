@@ -5,6 +5,7 @@ import bcrypt from "bcryptjs";
 import connectDB from "@/lib/db";
 import User from "@/models/User";
 import { signInLimiter, checkRateLimit } from "@/lib/rateLimiter";
+import { compare } from "bcryptjs";
 
 declare module "next-auth" {
   interface Session extends DefaultSession {
@@ -35,46 +36,32 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          throw new Error("Please enter an email and password");
+          throw new Error("Invalid credentials");
         }
 
-        try {
-          // Check rate limit
-          const rateLimitResult = await checkRateLimit(
-            signInLimiter,
-            credentials.email
-          );
+        await connectDB();
 
-          if (!rateLimitResult.success) {
-            throw new Error(rateLimitResult.message);
-          }
+        const user = await User.findOne({ email: credentials.email });
 
-          await connectDB();
-          const user = await User.findOne({ email: credentials.email });
-
-          if (!user) {
-            throw new Error("No user found with this email");
-          }
-
-          const isValid = await bcrypt.compare(
-            credentials.password,
-            user.password
-          );
-
-          if (!isValid) {
-            throw new Error("Invalid password");
-          }
-
-          return {
-            id: user._id.toString(),
-            email: user.email,
-            name: user.name,
-            role: user.role,
-          };
-        } catch (error) {
-          console.error("Auth error:", error);
-          throw error;
+        if (!user) {
+          throw new Error("Invalid credentials");
         }
+
+        const isPasswordValid = await compare(
+          credentials.password,
+          user.password
+        );
+
+        if (!isPasswordValid) {
+          throw new Error("Invalid credentials");
+        }
+
+        return {
+          id: user._id.toString(),
+          email: user.email,
+          name: user.name,
+          role: user.role,
+        };
       },
     }),
   ],

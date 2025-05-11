@@ -1,16 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Navbar from "@/components/Navbar";
+import Navbar from "./Navbar";
 
 export function ConditionalNavbar() {
   const pathname = usePathname();
-  if (pathname === "/") {
-    return (
-      <div className="lg:hidden">
-        <Navbar />
-      </div>
-    );
-  }
-  return <Navbar />;
+
+  // Show navbar on mobile for all pages
+  return (
+    <div className="lg:hidden">
+      <Navbar />
+    </div>
+  );
 }

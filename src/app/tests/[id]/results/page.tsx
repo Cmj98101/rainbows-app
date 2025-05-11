@@ -22,7 +22,7 @@ const STATUS_OPTIONS = [
   {
     value: "absent",
     label: "Absent",
-    className: "bg-orange-400 text-white border-0",
+    className: "btn-warning",
   },
 ];
 
@@ -92,60 +92,106 @@ export default function TestResultsPage() {
     }
   };
 
-  if (loading) return <div className="p-4">Loading...</div>;
-  if (error) return <div className="p-4 text-red-600">{error}</div>;
-  if (!test) return <div className="p-4">Test not found</div>;
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto flex justify-center items-center min-h-[50vh]">
+        <span className="loading loading-spinner loading-lg"></span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="alert alert-error">
+          <span>{error}</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (!test) {
+    return (
+      <div className="max-w-7xl mx-auto">
+        <div className="alert alert-warning">
+          <span>Test not found</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-4">
+    <div className="max-w-7xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold">
         Record Results: {test.name} ({new Date(test.date).toLocaleDateString()})
       </h1>
+
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="bg-white shadow rounded-lg p-6">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th colSpan={3}>Result</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student._id}>
-                  <td>
-                    {student.firstName} {student.lastName}
-                  </td>
-                  <td colSpan={3}>
-                    <div className="btn-group">
-                      {STATUS_OPTIONS.map((opt) => (
-                        <button
-                          key={opt.value}
-                          type="button"
-                          className={`btn btn-sm ${
-                            results[student._id] === opt.value
-                              ? opt.className
-                              : "btn-outline"
-                          }`}
-                          onClick={() =>
-                            handleResultChange(student._id, opt.value)
-                          }
-                        >
-                          {opt.label}
-                        </button>
-                      ))}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <div className="overflow-x-auto">
+              <table className="table w-full">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Result</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => (
+                    <tr key={student._id}>
+                      <td className="font-medium">
+                        {student.firstName} {student.lastName}
+                      </td>
+                      <td>
+                        <div className="join">
+                          {STATUS_OPTIONS.map((opt) => (
+                            <button
+                              key={opt.value}
+                              type="button"
+                              className={`join-item btn btn-sm ${
+                                results[student._id] === opt.value
+                                  ? opt.className
+                                  : "btn-outline"
+                              }`}
+                              onClick={() =>
+                                handleResultChange(student._id, opt.value)
+                              }
+                            >
+                              {opt.label}
+                            </button>
+                          ))}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        {error && <div className="text-red-600">{error}</div>}
-        {success && <div className="text-green-600">{success}</div>}
+
+        {error && (
+          <div className="alert alert-error">
+            <span>{error}</span>
+          </div>
+        )}
+        {success && (
+          <div className="alert alert-success">
+            <span>{success}</span>
+          </div>
+        )}
+
         <div className="flex justify-end">
           <button type="submit" className="btn btn-primary" disabled={saving}>
-            {saving ? "Saving..." : "Save Results"}
+            {saving ? (
+              <>
+                <span className="loading loading-spinner loading-sm"></span>
+                Saving...
+              </>
+            ) : (
+              "Save Results"
+            )}
           </button>
         </div>
       </form>
