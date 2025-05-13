@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { signOut } from "next-auth/react";
 import {
+  HomeIcon,
   UserGroupIcon,
   CalendarIcon,
   ClipboardDocumentCheckIcon,
@@ -24,22 +25,28 @@ function SignOutButton() {
 
 export function Sidebar() {
   return (
-    <ul className="menu p-4 w-80 min-h-full bg-base-200 text-base-content">
+    <ul className="menu p-4 w-80 min-h-full bg-base-200 text-base-content dark:bg-neutral dark:text-base-100">
       <li className="menu-title">Navigation</li>
       <li>
-        <Link href="/students">
+        <Link href="/" className="text-base-content dark:text-white">
+          <HomeIcon className="h-5 w-5" />
+          Dashboard
+        </Link>
+      </li>
+      <li>
+        <Link href="/students" className="text-base-content dark:text-white">
           <UserGroupIcon className="h-5 w-5" />
           Students
         </Link>
       </li>
       <li>
-        <Link href="/attendance">
+        <Link href="/attendance" className="text-base-content dark:text-white">
           <CalendarIcon className="h-5 w-5" />
           Attendance
         </Link>
       </li>
       <li>
-        <Link href="/tests">
+        <Link href="/tests" className="text-base-content dark:text-white">
           <ClipboardDocumentCheckIcon className="h-5 w-5" />
           Tests
         </Link>
