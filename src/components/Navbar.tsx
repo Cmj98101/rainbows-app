@@ -14,9 +14,9 @@ export default function Navbar() {
           <div className="flex items-center">
             <label
               htmlFor="drawer"
-              className="btn btn-ghost drawer-button lg:hidden mr-2"
+              className="btn btn-ghost drawer-button lg:hidden mr-2 group"
             >
-              <Bars3Icon className="h-6 w-6" />
+              <Bars3Icon className="h-6 w-6 text-black dark:text-black" />
             </label>
             <div className="flex-shrink-0 flex items-center">
               <Link href="/" className="text-xl font-bold text-indigo-600">

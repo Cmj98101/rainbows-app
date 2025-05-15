@@ -118,82 +118,88 @@ export default function TakeRollPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Take Attendance</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Date
-          </label>
-          <input
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-            className="rounded border-gray-300 px-2 py-1"
-          />
+    <div className="max-w-7xl mx-auto space-y-6 px-4 py-8">
+      <div className="flex justify-between items-center">
+        <h1 className="text-2xl font-bold">Take Attendance</h1>
+      </div>
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-base-content mb-1">
+                Date
+              </label>
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                className="input input-bordered input-sm"
+              />
+            </div>
+            <div className="overflow-x-auto">
+              <table className="table w-full bg-base-100 text-base-content">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th colSpan={2}>Attendance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {students.map((student) => (
+                    <tr key={student._id} className="bg-base-100">
+                      <td>
+                        {student.firstName} {student.lastName}
+                      </td>
+                      <td colSpan={2}>
+                        <div className="btn-group">
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${
+                              attendance[student._id] === true
+                                ? "btn-primary"
+                                : "btn-outline"
+                            }`}
+                            onClick={() =>
+                              handleAttendanceChange(student._id, true)
+                            }
+                          >
+                            Present
+                          </button>
+                          <button
+                            type="button"
+                            className={`btn btn-sm ${
+                              attendance[student._id] === false ||
+                              attendance[student._id] === undefined
+                                ? "btn-error"
+                                : "btn-outline"
+                            }`}
+                            onClick={() =>
+                              handleAttendanceChange(student._id, false)
+                            }
+                          >
+                            Absent
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            {error && <div className="alert alert-error">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={loading}
+              >
+                {loading ? "Saving..." : "Save Attendance"}
+              </button>
+            </div>
+          </form>
         </div>
-        <div className="bg-white shadow rounded-lg p-6">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th colSpan={2}>Attendance</th>
-              </tr>
-            </thead>
-            <tbody>
-              {students.map((student) => (
-                <tr key={student._id}>
-                  <td>
-                    {student.firstName} {student.lastName}
-                  </td>
-                  <td colSpan={2}>
-                    <div className="btn-group">
-                      <button
-                        type="button"
-                        className={`btn btn-sm ${
-                          attendance[student._id] === true
-                            ? "btn-primary"
-                            : "btn-outline"
-                        }`}
-                        onClick={() =>
-                          handleAttendanceChange(student._id, true)
-                        }
-                      >
-                        Present
-                      </button>
-                      <button
-                        type="button"
-                        className={`btn btn-sm ${
-                          attendance[student._id] === false ||
-                          attendance[student._id] === undefined
-                            ? "btn-error"
-                            : "btn-outline"
-                        }`}
-                        onClick={() =>
-                          handleAttendanceChange(student._id, false)
-                        }
-                      >
-                        Absent
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {error && <div className="text-red-600">{error}</div>}
-        {success && <div className="text-green-600">{success}</div>}
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save Attendance"}
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 }
