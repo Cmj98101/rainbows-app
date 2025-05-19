@@ -17,7 +17,10 @@ interface AttendanceRecord {
 
 function getTodayISO() {
   const today = new Date();
-  return today.toISOString().split("T")[0];
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default function TakeRollPage() {
@@ -27,6 +30,10 @@ export default function TakeRollPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
   const [error, setError] = useState("");
+  const [sortField, setSortField] = useState<"firstName" | "lastName">(
+    "lastName"
+  );
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const fetchAttendance = async () => {
@@ -136,6 +143,28 @@ export default function TakeRollPage() {
                 className="input input-bordered input-sm"
               />
             </div>
+            <div className="flex gap-4 mb-4">
+              <select
+                className="select select-bordered select-sm"
+                value={sortField}
+                onChange={(e) =>
+                  setSortField(e.target.value as "firstName" | "lastName")
+                }
+              >
+                <option value="firstName">First Name</option>
+                <option value="lastName">Last Name</option>
+              </select>
+              <select
+                className="select select-bordered select-sm"
+                value={sortDirection}
+                onChange={(e) =>
+                  setSortDirection(e.target.value as "asc" | "desc")
+                }
+              >
+                <option value="asc">A–Z</option>
+                <option value="desc">Z–A</option>
+              </select>
+            </div>
             <div className="overflow-x-auto">
               <table className="table w-full bg-base-100 text-base-content">
                 <thead>
@@ -145,44 +174,52 @@ export default function TakeRollPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {students.map((student) => (
-                    <tr key={student._id} className="bg-base-100">
-                      <td>
-                        {student.firstName} {student.lastName}
-                      </td>
-                      <td colSpan={2}>
-                        <div className="btn-group">
-                          <button
-                            type="button"
-                            className={`btn btn-sm ${
-                              attendance[student._id] === true
-                                ? "btn-primary"
-                                : "btn-outline"
-                            }`}
-                            onClick={() =>
-                              handleAttendanceChange(student._id, true)
-                            }
-                          >
-                            Present
-                          </button>
-                          <button
-                            type="button"
-                            className={`btn btn-sm ${
-                              attendance[student._id] === false ||
-                              attendance[student._id] === undefined
-                                ? "btn-error"
-                                : "btn-outline"
-                            }`}
-                            onClick={() =>
-                              handleAttendanceChange(student._id, false)
-                            }
-                          >
-                            Absent
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {[...students]
+                    .sort((a, b) => {
+                      const aValue = a[sortField].toLowerCase();
+                      const bValue = b[sortField].toLowerCase();
+                      return sortDirection === "asc"
+                        ? aValue.localeCompare(bValue)
+                        : bValue.localeCompare(aValue);
+                    })
+                    .map((student) => (
+                      <tr key={student._id} className="bg-base-100">
+                        <td>
+                          {student.firstName} {student.lastName}
+                        </td>
+                        <td colSpan={2}>
+                          <div className="btn-group">
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${
+                                attendance[student._id] === true
+                                  ? "btn-primary"
+                                  : "btn-outline"
+                              }`}
+                              onClick={() =>
+                                handleAttendanceChange(student._id, true)
+                              }
+                            >
+                              Present
+                            </button>
+                            <button
+                              type="button"
+                              className={`btn btn-sm ${
+                                attendance[student._id] === false ||
+                                attendance[student._id] === undefined
+                                  ? "btn-error"
+                                  : "btn-outline"
+                              }`}
+                              onClick={() =>
+                                handleAttendanceChange(student._id, false)
+                              }
+                            >
+                              Absent
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
                 </tbody>
               </table>
             </div>
