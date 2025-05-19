@@ -23,6 +23,7 @@ export default function RootLayout({
         <Providers>
           <LayoutContent>{children}</LayoutContent>
         </Providers>
+        <Analytics />
       </body>
     </html>
   );
