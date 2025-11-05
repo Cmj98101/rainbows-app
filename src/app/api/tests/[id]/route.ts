@@ -1,20 +1,23 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Test from "@/models/Test";
+import { getTestById, deleteTest } from "@/lib/supabase-helpers";
+import { supabaseAdmin } from "@/lib/supabase";
+import { getTempChurchId } from "@/lib/temp-auth";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
-    const param = await params;
-    const test = await Test.findById(param.id);
+    const { id } = await params;
+    const churchId = await getTempChurchId();
+
+    const test = await getTestById(id, churchId);
     if (!test) {
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
     return NextResponse.json(test);
   } catch (error) {
+    console.error("Error fetching test:", error);
     return NextResponse.json(
       { error: "Failed to fetch test" },
       { status: 500 }
@@ -27,19 +30,26 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
-    const param = await params;
-    const { name, date } = await request.json();
-    const test = await Test.findByIdAndUpdate(
-      param.id,
-      { name, date },
-      { new: true }
-    );
+    const { id } = await params;
+    const churchId = await getTempChurchId();
+    const { name, date, description } = await request.json();
+
+    const { data: test, error } = await supabaseAdmin
+      .from('tests')
+      .update({ name, date, description })
+      .eq('id', id)
+      .eq('church_id', churchId)
+      .select()
+      .single();
+
+    if (error) throw error;
     if (!test) {
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
+
     return NextResponse.json(test);
   } catch (error) {
+    console.error("Error updating test:", error);
     return NextResponse.json(
       { error: "Failed to update test" },
       { status: 500 }
@@ -52,14 +62,13 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
-    const param = await params;
-    const test = await Test.findByIdAndDelete(param.id);
-    if (!test) {
-      return NextResponse.json({ error: "Test not found" }, { status: 404 });
-    }
+    const { id } = await params;
+    const churchId = await getTempChurchId();
+
+    await deleteTest(id, churchId);
     return NextResponse.json({ success: true });
   } catch (error) {
+    console.error("Error deleting test:", error);
     return NextResponse.json(
       { error: "Failed to delete test" },
       { status: 500 }

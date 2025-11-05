@@ -1,44 +1,26 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Student from "@/models/Student";
-import Test from "@/models/Test";
+import { saveTestResults } from "@/lib/supabase-helpers";
+import { getTempChurchId } from "@/lib/temp-auth";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await connectDB();
+    const { id: testId } = await params;
     const { results } = await request.json();
-    const param = await params;
-    const testId = param.id;
-    console.log("Received results for test:", testId, results); // Debug log
-    const test = await Test.findById(testId);
-    if (!test) {
-      return NextResponse.json({ error: "Test not found" }, { status: 404 });
-    }
-    const testName = test.name;
-    const testDate = test.date;
-    const updates = await Promise.all(
-      Object.entries(results).map(async ([studentId, status]) => {
-        const student = await Student.findById(studentId);
-        if (!student) return null;
-        // Remove any existing result for this test
-        student.testResults = student.testResults.filter(
-          (r: any) => r.testId.toString() !== testId.toString()
-        );
-        // Add the new/updated result
-        student.testResults.push({
-          testId,
-          testName,
-          date: testDate,
-          status,
-        });
-        await student.save();
-        return student._id;
-      })
-    );
-    return NextResponse.json({ updated: updates.filter(Boolean) });
+
+    console.log("Received results for test:", testId, results);
+
+    // Convert results object to array format
+    const resultsArray = Object.entries(results).map(([studentId, status]) => ({
+      student_id: studentId,
+      status: status as 'passed' | 'failed' | 'absent',
+    }));
+
+    const savedResults = await saveTestResults(testId, resultsArray);
+
+    return NextResponse.json({ updated: savedResults.length });
   } catch (error) {
     console.error("Error saving test results:", error);
     return NextResponse.json(
