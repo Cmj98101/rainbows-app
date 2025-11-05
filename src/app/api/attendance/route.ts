@@ -10,6 +10,7 @@ export async function GET(request: Request) {
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
     const date = searchParams.get("date");
+    const statsOnly = searchParams.get("statsOnly") === "true";
 
     // If specific date requested, get attendance for that date
     if (date) {
@@ -17,14 +18,14 @@ export async function GET(request: Request) {
       return NextResponse.json(attendance);
     }
 
-    // If date range requested, get attendance stats
-    if (startDate && endDate) {
+    // If date range requested with statsOnly flag
+    if (startDate && endDate && statsOnly) {
       const stats = await getAttendanceStats(churchId, startDate, endDate);
       return NextResponse.json(stats);
     }
 
-    // Otherwise, get all students with their attendance
-    const { data: students, error } = await supabaseAdmin
+    // Get all students with their attendance (optionally filtered by date range)
+    let query = supabaseAdmin
       .from('students')
       .select(`
         id,
@@ -39,9 +40,29 @@ export async function GET(request: Request) {
       .eq('church_id', churchId)
       .order('last_name', { ascending: true });
 
+    const { data: students, error } = await query;
+
     if (error) throw error;
 
-    return NextResponse.json(students);
+    // Filter attendance by date range if provided
+    let formattedStudents = students.map((student: any) => {
+      let filteredAttendance = student.attendance || [];
+
+      if (startDate && endDate) {
+        filteredAttendance = filteredAttendance.filter((att: any) => {
+          return att.date >= startDate && att.date <= endDate;
+        });
+      }
+
+      return {
+        _id: student.id, // Keep MongoDB format for compatibility
+        firstName: student.first_name,
+        lastName: student.last_name,
+        attendance: filteredAttendance,
+      };
+    });
+
+    return NextResponse.json(formattedStudents);
   } catch (error) {
     console.error("Error fetching attendance:", error);
     return NextResponse.json(

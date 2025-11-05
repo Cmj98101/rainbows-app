@@ -10,7 +10,29 @@ export async function GET() {
     const students = await getStudentsWithGuardians(churchId);
     console.log(`Found ${students.length} students`);
 
-    return NextResponse.json(students);
+    // Format students to match MongoDB format for frontend compatibility
+    const formattedStudents = students.map((student: any) => ({
+      _id: student.id,
+      firstName: student.first_name,
+      lastName: student.last_name,
+      birthday: student.birthday,
+      gender: student.gender,
+      email: student.email,
+      phone: student.phone,
+      address: student.address,
+      guardians: student.guardians?.map((g: any) => ({
+        name: g.name,
+        relationship: g.relationship,
+        phone: g.phone,
+        email: g.email,
+        address: g.address,
+        isEmergencyContact: g.is_emergency_contact,
+      })) || [],
+      attendance: student.attendance || [],
+      testResults: student.test_results || [],
+    }));
+
+    return NextResponse.json(formattedStudents);
   } catch (error) {
     console.error("Error in GET /api/students:", error);
     return NextResponse.json(
