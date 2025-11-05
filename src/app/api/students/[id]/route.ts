@@ -1,15 +1,7 @@
 import { NextResponse } from "next/server";
-import Student from "@/models/Student";
-import connectToDatabase from "@/lib/db";
-
-interface Guardian {
-  name?: string;
-  relationship?: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-  isEmergencyContact?: boolean;
-}
+import { getStudentById, updateStudent, deleteStudent } from "@/lib/supabase-helpers";
+import { supabaseAdmin } from "@/lib/supabase";
+import { getTempChurchId } from "@/lib/temp-auth";
 
 export async function GET(
   request: Request,
@@ -17,8 +9,9 @@ export async function GET(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const student = await Student.findById(id);
+    const churchId = await getTempChurchId();
+
+    const student = await getStudentById(id, churchId);
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
@@ -38,50 +31,53 @@ export async function PUT(
 ) {
   try {
     const { id } = await params;
+    const churchId = await getTempChurchId();
     const data = await request.json();
-    await connectToDatabase();
 
-    // Process guardian data
-    const guardians = (data.guardians || []).map((guardian: Guardian) => ({
-      name: guardian.name?.trim() || "",
-      relationship: guardian.relationship?.trim() || "",
-      phone: guardian.phone?.trim() || "",
-      email: guardian.email?.trim() || "",
-      address: guardian.address?.trim() || "",
-      isEmergencyContact: Boolean(guardian.isEmergencyContact),
-    }));
+    // Handle guardians separately (they're in a separate table now)
+    const { guardians, ...studentUpdates } = data;
 
-    // Ensure all required guardian fields are present
-    const validGuardians = guardians.filter(
-      (guardian: { name: string; relationship: string; phone: string }) =>
-        guardian.name && guardian.relationship && guardian.phone
-    );
-
-    // Remove guardians from the main update data
-    const { guardians: _, ...restData } = data;
-
-    console.log("Updating student with data:", {
-      ...restData,
-      guardians: validGuardians,
-    }); // Debug log
-
-    const student = await Student.findByIdAndUpdate(
-      id,
-      {
-        $set: {
-          ...restData,
-          guardians: validGuardians,
-        },
-      },
-      { new: true, runValidators: true }
-    );
+    // Update student basic info
+    const student = await updateStudent(id, churchId, studentUpdates);
 
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
 
-    console.log("Updated student:", student); // Debug log
-    return NextResponse.json(student);
+    // Update guardians if provided
+    if (guardians) {
+      // Delete existing guardians
+      await supabaseAdmin
+        .from('guardians')
+        .delete()
+        .eq('student_id', id);
+
+      // Insert new guardians
+      if (guardians.length > 0) {
+        const validGuardians = guardians
+          .filter((g: any) => g.name && g.relationship && g.phone)
+          .map((g: any) => ({
+            student_id: id,
+            name: g.name.trim(),
+            relationship: g.relationship.trim(),
+            phone: g.phone.trim(),
+            email: g.email?.trim() || null,
+            address: g.address || {},
+            is_emergency_contact: Boolean(g.isEmergencyContact || g.is_emergency_contact),
+          }));
+
+        if (validGuardians.length > 0) {
+          await supabaseAdmin
+            .from('guardians')
+            .insert(validGuardians);
+        }
+      }
+    }
+
+    // Return updated student with guardians
+    const updatedStudent = await getStudentById(id, churchId);
+    console.log("Updated student:", updatedStudent.id);
+    return NextResponse.json(updatedStudent);
   } catch (error) {
     console.error("Error updating student:", error);
     return NextResponse.json(
@@ -97,11 +93,9 @@ export async function DELETE(
 ) {
   try {
     const { id } = await params;
-    await connectToDatabase();
-    const student = await Student.findByIdAndDelete(id);
-    if (!student) {
-      return NextResponse.json({ error: "Student not found" }, { status: 404 });
-    }
+    const churchId = await getTempChurchId();
+
+    await deleteStudent(id, churchId);
     return NextResponse.json({ message: "Student deleted successfully" });
   } catch (error) {
     console.error("Error deleting student:", error);
