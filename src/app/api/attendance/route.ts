@@ -1,45 +1,49 @@
 import { NextResponse } from "next/server";
-import connectDB from "@/lib/db";
-import Student from "@/models/Student";
+import { getAttendanceByDate, getAttendanceStats } from "@/lib/supabase-helpers";
+import { supabaseAdmin } from "@/lib/supabase";
+import { getTempChurchId } from "@/lib/temp-auth";
 
 export async function GET(request: Request) {
   try {
-    await connectDB();
-
-    // Get date range from query parameters
+    const churchId = await getTempChurchId();
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
+    const date = searchParams.get("date");
 
-    const students = await Student.find({}).select(
-      "firstName lastName attendance"
-    );
-
-    // Filter attendance records based on date range if provided
-    if (startDate && endDate) {
-      const start = new Date(startDate);
-      const end = new Date(endDate);
-      end.setHours(23, 59, 59, 999); // Include the entire end date
-
-      students.forEach((student: any) => {
-        student.attendance = student.attendance.filter((record: any) => {
-          const recordDate = new Date(record.date);
-          return recordDate >= start && recordDate <= end;
-        });
-      });
+    // If specific date requested, get attendance for that date
+    if (date) {
+      const attendance = await getAttendanceByDate(churchId, date);
+      return NextResponse.json(attendance);
     }
 
-    // Convert dates to ISO strings for consistent handling
-    const formattedStudents = students.map((student: any) => ({
-      ...student.toObject(),
-      attendance: student.attendance.map((record: any) => ({
-        ...record,
-        date: new Date(record.date).toISOString(),
-      })),
-    }));
+    // If date range requested, get attendance stats
+    if (startDate && endDate) {
+      const stats = await getAttendanceStats(churchId, startDate, endDate);
+      return NextResponse.json(stats);
+    }
 
-    return NextResponse.json(formattedStudents);
+    // Otherwise, get all students with their attendance
+    const { data: students, error } = await supabaseAdmin
+      .from('students')
+      .select(`
+        id,
+        first_name,
+        last_name,
+        attendance (
+          id,
+          date,
+          present
+        )
+      `)
+      .eq('church_id', churchId)
+      .order('last_name', { ascending: true });
+
+    if (error) throw error;
+
+    return NextResponse.json(students);
   } catch (error) {
+    console.error("Error fetching attendance:", error);
     return NextResponse.json(
       { error: "Failed to fetch attendance" },
       { status: 500 }
@@ -49,38 +53,40 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    await connectDB();
+    const churchId = await getTempChurchId();
     const body = await request.json();
 
     // Support both single and batch attendance submissions
     const records = Array.isArray(body) ? body : [body];
-    console.log("Received attendance records:", records); // Debug log
-    const updatedStudents = [];
-    for (const record of records) {
-      const { studentId, date, present } = record;
-      if (!studentId || !date || typeof present !== "boolean") {
-        console.error("Invalid record:", record);
-        continue;
-      }
-      // Find the student and update only the attendance array
-      const student = await Student.findById(studentId);
-      if (!student) {
-        console.error("Student not found:", studentId);
-        continue;
-      }
-      // Remove any existing attendance record for this date
-      const filteredAttendance = student.attendance.filter(
-        (r: any) => new Date(r.date).toISOString().split("T")[0] !== date
+    console.log("Received attendance records:", records);
+
+    // Batch insert/update using upsert
+    const attendanceRecords = records
+      .filter((r: any) => r.studentId && r.date && typeof r.present === "boolean")
+      .map((r: any) => ({
+        student_id: r.studentId,
+        class_id: r.classId, // Get from record or use temp
+        date: r.date,
+        present: r.present,
+      }));
+
+    if (attendanceRecords.length === 0) {
+      return NextResponse.json(
+        { error: "No valid attendance records provided" },
+        { status: 400 }
       );
-      // Add the new/updated record
-      filteredAttendance.push({ date: new Date(date), present });
-      // Update only the attendance field
-      await Student.findByIdAndUpdate(studentId, {
-        $set: { attendance: filteredAttendance },
-      });
-      updatedStudents.push(studentId);
     }
-    return NextResponse.json({ updated: updatedStudents.length });
+
+    // Use upsert to insert or update attendance
+    const { data, error } = await supabaseAdmin
+      .from('attendance')
+      .upsert(attendanceRecords, {
+        onConflict: 'student_id,date,class_id',
+      });
+
+    if (error) throw error;
+
+    return NextResponse.json({ updated: attendanceRecords.length });
   } catch (error) {
     console.error("Attendance API error:", error);
     return NextResponse.json(
