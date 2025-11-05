@@ -4,12 +4,8 @@
  * This script migrates existing data from MongoDB to Supabase,
  * transforming nested documents into relational tables.
  *
- * Run with: npx tsx scripts/migrate-mongo-to-supabase.ts
+ * Run with: npm run migrate:mongo-to-supabase
  */
-
-// Load environment variables from .env.local
-import { config } from 'dotenv';
-config({ path: '.env.local' });
 
 import mongoose from 'mongoose';
 import { supabaseAdmin } from '../src/lib/supabase';
