@@ -88,7 +88,7 @@ async function migrateUsers(churchId: string) {
       }
 
       const { error } = await supabaseAdmin.from('users').insert({
-        id: mongoUser._id.toString(),
+        // Let Supabase generate new UUID (don't use MongoDB ObjectId)
         church_id: churchId,
         email: mongoUser.email,
         name: mongoUser.name || mongoUser.email.split('@')[0],
@@ -151,13 +151,15 @@ async function migrateStudents(churchId: string, classId: string) {
   const mongoStudents = await Student.find({}).lean();
   console.log(`   Found ${mongoStudents.length} students in MongoDB`);
 
+  // Map MongoDB ObjectId to new Supabase UUID for relationships
+  const studentIdMap = new Map<string, string>();
+
   for (const mongoStudent of mongoStudents) {
     try {
-      // Insert student
+      // Insert student (let Supabase generate new UUID)
       const { data: student, error: studentError } = await supabaseAdmin
         .from('students')
         .insert({
-          id: mongoStudent._id.toString(),
           church_id: churchId,
           class_id: classId,
           first_name: mongoStudent.firstName,
@@ -178,6 +180,9 @@ async function migrateStudents(churchId: string, classId: string) {
       }
 
       stats.students++;
+
+      // Store mapping for test results migration
+      studentIdMap.set(mongoStudent._id.toString(), student.id);
 
       // Migrate guardians (nested array → separate table)
       if (mongoStudent.guardians && mongoStudent.guardians.length > 0) {
@@ -231,9 +236,11 @@ async function migrateStudents(churchId: string, classId: string) {
   console.log(`✅ Migrated ${stats.students}/${mongoStudents.length} students`);
   console.log(`✅ Migrated ${stats.guardians} guardians`);
   console.log(`✅ Migrated ${stats.attendance} attendance records\n`);
+
+  return studentIdMap;
 }
 
-async function migrateTests(churchId: string, classId: string) {
+async function migrateTests(churchId: string, classId: string, studentIdMap: Map<string, string>) {
   console.log('📝 Migrating tests...');
 
   const mongoTests = await Test.find({}).lean();
@@ -241,11 +248,10 @@ async function migrateTests(churchId: string, classId: string) {
 
   for (const mongoTest of mongoTests) {
     try {
-      // Insert test
+      // Insert test (let Supabase generate new UUID)
       const { data: test, error: testError } = await supabaseAdmin
         .from('tests')
         .insert({
-          id: mongoTest._id.toString(),
           church_id: churchId,
           class_id: classId,
           name: mongoTest.name,
@@ -273,11 +279,20 @@ async function migrateTests(churchId: string, classId: string) {
         );
 
         if (result) {
+          // Look up the new Supabase UUID using the MongoDB ObjectId
+          const mongoStudentId = student._id.toString();
+          const supabaseStudentId = studentIdMap.get(mongoStudentId);
+
+          if (!supabaseStudentId) {
+            stats.errors.push(`Test result: Student ${mongoStudentId} not found in map`);
+            continue;
+          }
+
           const { error: resultError } = await supabaseAdmin
             .from('test_results')
             .insert({
               test_id: test.id,
-              student_id: student._id.toString(),
+              student_id: supabaseStudentId,
               status: result.status,
             });
 
@@ -344,10 +359,10 @@ async function main() {
     const classId = await createDefaultClass(churchId);
 
     // Migrate students (includes guardians and attendance)
-    await migrateStudents(churchId, classId);
+    const studentIdMap = await migrateStudents(churchId, classId);
 
     // Migrate tests and test results
-    await migrateTests(churchId, classId);
+    await migrateTests(churchId, classId, studentIdMap);
 
     // Print summary
     await printSummary();
