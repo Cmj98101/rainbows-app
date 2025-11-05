@@ -7,6 +7,10 @@
  * Run with: npx tsx scripts/migrate-mongo-to-supabase.ts
  */
 
+// Load environment variables from .env.local
+import { config } from 'dotenv';
+config({ path: '.env.local' });
+
 import mongoose from 'mongoose';
 import { supabaseAdmin } from '../src/lib/supabase';
 import Student from '../src/models/Student';
