@@ -15,7 +15,40 @@ export async function GET(
     if (!student) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 });
     }
-    return NextResponse.json(student);
+
+    // Transform Supabase format to MongoDB format for frontend compatibility
+    const formattedStudent = {
+      _id: student.id,
+      firstName: student.first_name,
+      lastName: student.last_name,
+      birthday: student.birthday,
+      gender: student.gender,
+      email: student.email,
+      phone: student.phone,
+      address: student.address,
+      notes: student.notes,
+      guardians: (student.guardians || []).map((g: any) => ({
+        name: g.name,
+        relationship: g.relationship,
+        phone: g.phone,
+        email: g.email,
+        address: g.address,
+        isEmergencyContact: g.is_emergency_contact,
+      })),
+      attendance: (student.attendance || []).map((a: any) => ({
+        date: a.date,
+        present: a.present,
+      })),
+      testResults: (student.test_results || []).map((tr: any) => ({
+        testId: tr.test?.id || tr.test_id,
+        testName: tr.test?.name || 'Unknown Test',
+        date: tr.test?.date || tr.created_at,
+        status: tr.status,
+        score: tr.score,
+      })),
+    };
+
+    return NextResponse.json(formattedStudent);
   } catch (error) {
     console.error("Error fetching student:", error);
     return NextResponse.json(
@@ -74,10 +107,32 @@ export async function PUT(
       }
     }
 
-    // Return updated student with guardians
+    // Return updated student with guardians (formatted)
     const updatedStudent = await getStudentById(id, churchId);
     console.log("Updated student:", updatedStudent.id);
-    return NextResponse.json(updatedStudent);
+
+    // Transform to MongoDB format
+    const formattedStudent = {
+      _id: updatedStudent.id,
+      firstName: updatedStudent.first_name,
+      lastName: updatedStudent.last_name,
+      birthday: updatedStudent.birthday,
+      gender: updatedStudent.gender,
+      email: updatedStudent.email,
+      phone: updatedStudent.phone,
+      address: updatedStudent.address,
+      notes: updatedStudent.notes,
+      guardians: (updatedStudent.guardians || []).map((g: any) => ({
+        name: g.name,
+        relationship: g.relationship,
+        phone: g.phone,
+        email: g.email,
+        address: g.address,
+        isEmergencyContact: g.is_emergency_contact,
+      })),
+    };
+
+    return NextResponse.json(formattedStudent);
   } catch (error) {
     console.error("Error updating student:", error);
     return NextResponse.json(
