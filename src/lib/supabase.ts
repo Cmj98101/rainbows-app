@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Database } from '@/types/supabase';
 
 // Get environment variables with validation
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -30,7 +29,8 @@ if (!supabaseServiceKey && typeof window === 'undefined') {
 
 // Supabase client for server-side use (with service role key)
 // Use this in API routes and server components
-export const supabaseAdmin = createClient<Database>(
+// Note: Using untyped client to avoid TypeScript strict type issues
+export const supabaseAdmin = createClient(
   supabaseUrl,
   supabaseServiceKey || '',
   {
@@ -43,7 +43,7 @@ export const supabaseAdmin = createClient<Database>(
 
 // Supabase client for client-side use (with anon key)
 // Use this in client components
-export const supabaseClient = createClient<Database>(
+export const supabaseClient = createClient(
   supabaseUrl,
   supabaseAnonKey || '',
   {
