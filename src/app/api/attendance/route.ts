@@ -110,7 +110,12 @@ export async function POST(request: Request) {
     console.log("Received attendance records:", records);
 
     // Batch insert/update using upsert
-    const attendanceRecords = records
+    const attendanceRecords: Array<{
+      student_id: string;
+      class_id: string;
+      date: string;
+      present: boolean;
+    }> = records
       .filter((r: any) => r.studentId && r.date && typeof r.present === "boolean")
       .map((r: any) => ({
         student_id: r.studentId,
@@ -129,7 +134,7 @@ export async function POST(request: Request) {
     // Use upsert to insert or update attendance
     const { data, error } = await supabaseAdmin
       .from('attendance')
-      .upsert(attendanceRecords, {
+      .upsert(attendanceRecords as any, {
         onConflict: 'student_id,date,class_id',
       });
 
