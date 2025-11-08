@@ -1,6 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { motion } from "framer-motion";
+import { PageTransition, staggerContainer, staggerItem } from "@/components/Animations";
 
 interface Test {
   _id: string;
@@ -79,25 +81,46 @@ export default function TestsTable({ data }: TestsTableProps) {
   // Render grouped view (for admins)
   if (data.isGrouped && data.grouped) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Tests by Class</h1>
-          <Link href="/tests/add" className="btn btn-primary">
-            Add Test
-          </Link>
-        </div>
+      <PageTransition>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <motion.div
+            className="flex justify-between items-center"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <h1 className="text-2xl font-bold">Tests by Class</h1>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link href="/tests/add" className="btn btn-primary">
+                Add Test
+              </Link>
+            </motion.div>
+          </motion.div>
 
-        <div className="space-y-4">
-          {data.grouped.map((group) => {
-            const isOpen = openAccordions.has(group.classId || 'unassigned');
+          <motion.div
+            className="space-y-4"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+          >
+            {data.grouped.map((group) => {
+              const isOpen = openAccordions.has(group.classId || 'unassigned');
 
-            // Calculate average pass rate for the class
-            const avgPassRate = group.tests.length > 0
-              ? Math.round(group.tests.reduce((sum, t) => sum + t.passRate, 0) / group.tests.length)
-              : 0;
+              // Calculate average pass rate for the class
+              const avgPassRate = group.tests.length > 0
+                ? Math.round(group.tests.reduce((sum, t) => sum + t.passRate, 0) / group.tests.length)
+                : 0;
 
-            return (
-              <div key={group.classId || 'unassigned'} className="collapse collapse-arrow bg-base-100 shadow-xl">
+              return (
+                <motion.div
+                  key={group.classId || 'unassigned'}
+                  variants={staggerItem}
+                  className="collapse collapse-arrow bg-base-100 shadow-xl"
+                  whileHover={{
+                    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
                 <input
                   type="checkbox"
                   checked={isOpen}
@@ -135,20 +158,23 @@ export default function TestsTable({ data }: TestsTableProps) {
                     </table>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             );
           })}
-        </div>
+        </motion.div>
 
         {data.grouped.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No tests found</p>
-            <Link href="/tests/add" className="btn btn-primary">
-              Create Your First Test
-            </Link>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link href="/tests/add" className="btn btn-primary">
+                Create Your First Test
+              </Link>
+            </motion.div>
           </div>
         )}
-      </div>
+        </div>
+      </PageTransition>
     );
   }
 
@@ -156,13 +182,21 @@ export default function TestsTable({ data }: TestsTableProps) {
   const tests = data.tests || [];
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Tests</h1>
-        <Link href="/tests/add" className="btn btn-primary">
-          Add Test
-        </Link>
-      </div>
+    <PageTransition>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <motion.div
+          className="flex justify-between items-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <h1 className="text-2xl font-bold">Tests</h1>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/tests/add" className="btn btn-primary">
+              Add Test
+            </Link>
+          </motion.div>
+        </motion.div>
 
       <div className="card bg-base-100 shadow-xl">
         <div className="overflow-x-auto">
@@ -187,11 +221,14 @@ export default function TestsTable({ data }: TestsTableProps) {
       {tests.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">No tests found</p>
-          <Link href="/tests/add" className="btn btn-primary">
-            Create Your First Test
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/tests/add" className="btn btn-primary">
+              Create Your First Test
+            </Link>
+          </motion.div>
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

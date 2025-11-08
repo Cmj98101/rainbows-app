@@ -3,6 +3,9 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { TableRowSkeleton } from "@/components/LoadingStates";
+import { motion } from "framer-motion";
+import { PageTransition } from "@/components/Animations";
 
 interface User {
   id: string;
@@ -83,8 +86,36 @@ export default function UsersPage() {
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-[50vh]">
-        <span className="loading loading-spinner loading-lg"></span>
+      <div className="max-w-7xl mx-auto space-y-6 p-4">
+        <div className="flex justify-between items-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-300 rounded w-48"></div>
+          </div>
+          <div className="h-10 bg-gray-300 rounded w-24 animate-pulse"></div>
+        </div>
+
+        <div className="card bg-base-100 shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="table w-full">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Role</th>
+                  <th>Permissions</th>
+                  <th className="text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <TableRowSkeleton columns={5} />
+                <TableRowSkeleton columns={5} />
+                <TableRowSkeleton columns={5} />
+                <TableRowSkeleton columns={5} />
+                <TableRowSkeleton columns={5} />
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
     );
   }
@@ -100,14 +131,22 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6 p-4">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">User Management</h1>
-        <Link href="/admin/users/add" className="btn btn-primary">
-          <PlusIcon className="h-5 w-5 mr-2" />
-          Add User
-        </Link>
-      </div>
+    <PageTransition>
+      <div className="max-w-7xl mx-auto space-y-6 p-4">
+        <motion.div
+          className="flex justify-between items-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <h1 className="text-2xl font-bold">User Management</h1>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/admin/users/add" className="btn btn-primary">
+              <PlusIcon className="h-5 w-5 mr-2" />
+              Add User
+            </Link>
+          </motion.div>
+        </motion.div>
 
       <div className="card bg-base-100 shadow-xl">
         <div className="overflow-x-auto">
@@ -177,6 +216,7 @@ export default function UsersPage() {
           <p className="text-gray-500">No users found</p>
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

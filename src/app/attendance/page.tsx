@@ -2,6 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { TableRowSkeleton } from "@/components/LoadingStates";
+import { motion } from "framer-motion";
+import { PageTransition } from "@/components/Animations";
 
 interface Student {
   _id: string;
@@ -29,7 +32,7 @@ function getMonthRange(monthsAgo: number) {
 
 export default function AttendanceSummaryPage() {
   const [students, setStudents] = useState<Student[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [startDate, setStartDate] = useState(() => {
     const now = new Date();
@@ -82,14 +85,85 @@ export default function AttendanceSummaryPage() {
     }
   };
 
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Attendance Summary</h1>
-        <Link href="/attendance/take-roll" className="btn btn-primary">
-          Take Roll
-        </Link>
+  if (loading && students.length === 0) {
+    return (
+      <div className="max-w-7xl mx-auto space-y-6">
+        {/* Header skeleton */}
+        <div className="flex justify-between items-center">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-300 rounded w-56"></div>
+          </div>
+          <div className="h-10 bg-gray-300 rounded w-24 animate-pulse"></div>
+        </div>
+
+        {/* Filters card skeleton */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body animate-pulse">
+            <div className="flex flex-wrap gap-2 mb-4">
+              <div className="h-8 bg-gray-300 rounded w-24"></div>
+              <div className="h-8 bg-gray-300 rounded w-28"></div>
+              <div className="h-8 bg-gray-300 rounded w-32"></div>
+              <div className="h-8 bg-gray-300 rounded w-20"></div>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              <div className="flex flex-col gap-2">
+                <div className="h-4 bg-gray-300 rounded w-20"></div>
+                <div className="h-10 bg-gray-300 rounded w-40"></div>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="h-4 bg-gray-300 rounded w-20"></div>
+                <div className="h-10 bg-gray-300 rounded w-40"></div>
+              </div>
+              <div className="h-10 bg-gray-300 rounded w-24 self-end"></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Table skeleton */}
+        <div className="card bg-base-100 shadow-xl">
+          <div className="overflow-x-auto">
+            <table className="table w-full">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Present Days</th>
+                  <th>Absent Days</th>
+                  <th>Attendance Rate</th>
+                </tr>
+              </thead>
+              <tbody>
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+                <TableRowSkeleton columns={4} />
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
+    );
+  }
+
+  return (
+    <PageTransition>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <motion.div
+          className="flex justify-between items-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <h1 className="text-2xl font-bold">Attendance Summary</h1>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/attendance/take-roll" className="btn btn-primary">
+              Take Roll
+            </Link>
+          </motion.div>
+        </motion.div>
 
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
@@ -160,53 +234,48 @@ export default function AttendanceSummaryPage() {
               </thead>
               <tbody>
                 {students.map((student) => {
-                  const presentDays = student.attendance.filter((a) => {
-                    let presentValue = a.present;
-                    if (
-                      typeof presentValue === "undefined" &&
-                      typeof a === "object" &&
-                      "_doc" in a &&
-                      a._doc !== null &&
-                      typeof a._doc === "object" &&
-                      "present" in (a._doc as any)
-                    ) {
-                      presentValue = (a._doc as any).present;
-                    }
-                    return presentValue === true;
-                  }).length;
-                  const totalDays = student.attendance.length;
-                  const attendanceRate =
-                    totalDays > 0
-                      ? Math.round((presentDays / totalDays) * 100)
-                      : 0;
-                  return (
-                    <tr key={student._id}>
-                      <td className="font-medium">
-                        {student.firstName} {student.lastName}
-                      </td>
-                      <td>{presentDays}</td>
-                      <td>{totalDays - presentDays}</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <progress
-                            className="progress progress-primary w-16"
-                            value={attendanceRate}
-                            max="100"
-                          ></progress>
-                          <span>{attendanceRate}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
+                    const presentDays = student.attendance.filter((a) => {
+                      let presentValue = a.present;
+                      if (
+                        typeof presentValue === "undefined" &&
+                        typeof a === "object" &&
+                        "_doc" in a &&
+                        a._doc !== null &&
+                        typeof a._doc === "object" &&
+                        "present" in (a._doc as any)
+                      ) {
+                        presentValue = (a._doc as any).present;
+                      }
+                      return presentValue === true;
+                    }).length;
+                    const totalDays = student.attendance.length;
+                    const attendanceRate =
+                      totalDays > 0
+                        ? Math.round((presentDays / totalDays) * 100)
+                        : 0;
+                    return (
+                      <tr key={student._id}>
+                        <td className="font-medium">
+                          {student.firstName} {student.lastName}
+                        </td>
+                        <td>{presentDays}</td>
+                        <td>{totalDays - presentDays}</td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <progress
+                              className="progress progress-primary w-16"
+                              value={attendanceRate}
+                              max="100"
+                            ></progress>
+                            <span>{attendanceRate}%</span>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
               </tbody>
             </table>
           </div>
-          {loading && (
-            <div className="flex justify-center mt-4">
-              <span className="loading loading-spinner loading-md"></span>
-            </div>
-          )}
           {error && (
             <div className="alert alert-error mt-4">
               <span>{error}</span>
@@ -214,6 +283,7 @@ export default function AttendanceSummaryPage() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </PageTransition>
   );
 }

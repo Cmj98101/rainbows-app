@@ -102,3 +102,28 @@ export function PageLoadingState() {
     </div>
   );
 }
+
+export function FormSkeleton({ fields = 4 }: { fields?: number }) {
+  return (
+    <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="animate-pulse mb-6">
+        <div className="h-8 bg-gray-300 rounded w-48"></div>
+      </div>
+
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body space-y-4 animate-pulse">
+          {Array.from({ length: fields }).map((_, i) => (
+            <div key={i} className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+              <div className={`${i === fields - 1 ? 'h-24' : 'h-12'} bg-gray-300 rounded`}></div>
+            </div>
+          ))}
+          <div className="card-actions justify-end">
+            <div className="h-12 bg-gray-300 rounded w-20"></div>
+            <div className="h-12 bg-gray-300 rounded w-24"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

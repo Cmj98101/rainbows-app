@@ -16,6 +16,7 @@ export default function AddTestPage() {
   const [description, setDescription] = useState("");
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(false);
+  const [fetchingClasses, setFetchingClasses] = useState(true);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
 
@@ -34,6 +35,8 @@ export default function AddTestPage() {
         }
       } catch (err) {
         console.error("Failed to fetch classes:", err);
+      } finally {
+        setFetchingClasses(false);
       }
     };
     fetchClasses();
@@ -76,6 +79,42 @@ export default function AddTestPage() {
       setLoading(false);
     }
   };
+
+  // Show loading skeleton while fetching classes
+  if (fetchingClasses) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-48 mb-6"></div>
+        </div>
+
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body space-y-4 animate-pulse">
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-16 mb-2"></div>
+              <div className="h-12 bg-gray-300 rounded"></div>
+            </div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+              <div className="h-12 bg-gray-300 rounded"></div>
+            </div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-16 mb-2"></div>
+              <div className="h-12 bg-gray-300 rounded"></div>
+            </div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-32 mb-2"></div>
+              <div className="h-24 bg-gray-300 rounded"></div>
+            </div>
+            <div className="card-actions justify-end">
+              <div className="h-12 bg-gray-300 rounded w-20"></div>
+              <div className="h-12 bg-gray-300 rounded w-24"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">

@@ -3,6 +3,8 @@ import Link from "next/link";
 import { useState, useMemo } from "react";
 import { Student } from "@/types/student";
 import { StatCardSkeleton, AccordionSkeleton, TableRowSkeleton } from "@/components/LoadingStates";
+import { motion } from "framer-motion";
+import { PageTransition, staggerContainer, staggerItem } from "@/components/Animations";
 
 interface GroupedData {
   classId: string | null;
@@ -143,33 +145,50 @@ export default function StudentsTable({ data }: StudentsTableProps) {
   // Render admin view with multiple options
   if (data.isGrouped && data.grouped) {
     return (
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-2xl font-bold">Students</h1>
-            <p className="text-sm text-gray-600 mt-1">
-              {stats.total} total student{stats.total !== 1 ? 's' : ''} across {data.grouped.length} class{data.grouped.length !== 1 ? 'es' : ''}
-            </p>
-          </div>
-          <Link href="/students/add" className="btn btn-primary">
-            Add Student
-          </Link>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          <div className="stat bg-base-100 shadow rounded-lg">
-            <div className="stat-title">Total Students</div>
-            <div className="stat-value text-primary">{stats.total}</div>
-          </div>
-          {stats.byClass.slice(0, 3).map((classInfo, idx) => (
-            <div key={idx} className="stat bg-base-100 shadow rounded-lg">
-              <div className="stat-title">{classInfo.className}</div>
-              <div className="stat-value text-2xl">{classInfo.count}</div>
+      <PageTransition>
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header */}
+          <motion.div
+            className="flex justify-between items-center"
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            <div>
+              <h1 className="text-2xl font-bold">Students</h1>
+              <p className="text-sm text-gray-600 mt-1">
+                {stats.total} total student{stats.total !== 1 ? 's' : ''} across {data.grouped.length} class{data.grouped.length !== 1 ? 'es' : ''}
+              </p>
             </div>
-          ))}
-        </div>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link href="/students/add" className="btn btn-primary">
+                Add Student
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* Stats Cards */}
+          <motion.div
+            className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+          >
+            <motion.div variants={staggerItem} className="stat bg-base-100 shadow rounded-lg">
+              <div className="stat-title">Total Students</div>
+              <div className="stat-value text-primary">{stats.total}</div>
+            </motion.div>
+            {stats.byClass.slice(0, 3).map((classInfo, idx) => (
+              <motion.div
+                key={idx}
+                variants={staggerItem}
+                className="stat bg-base-100 shadow rounded-lg"
+              >
+                <div className="stat-title">{classInfo.className}</div>
+                <div className="stat-value text-2xl">{classInfo.count}</div>
+              </motion.div>
+            ))}
+          </motion.div>
 
         {/* View Controls */}
         <div className="card bg-base-100 shadow-xl">
@@ -232,8 +251,13 @@ export default function StudentsTable({ data }: StudentsTableProps) {
 
         {/* Grouped View */}
         {viewMode === "grouped" && (
-          <div className="space-y-4">
-            {data.grouped.map((group) => {
+          <motion.div
+            className="space-y-4"
+            variants={staggerContainer}
+            initial="hidden"
+            animate="show"
+          >
+            {data.grouped.map((group, idx) => {
               const isOpen = openAccordions.has(group.classId || 'unassigned');
               const groupStudents = searchQuery
                 ? group.students.filter(s => {
@@ -248,7 +272,15 @@ export default function StudentsTable({ data }: StudentsTableProps) {
               if (searchQuery && groupStudents.length === 0) return null;
 
               return (
-                <div key={group.classId || 'unassigned'} className="collapse collapse-arrow bg-base-100 shadow-xl">
+                <motion.div
+                  key={group.classId || 'unassigned'}
+                  variants={staggerItem}
+                  className="collapse collapse-arrow bg-base-100 shadow-xl"
+                  whileHover={{
+                    boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
+                  }}
+                  transition={{ duration: 0.2 }}
+                >
                   <input
                     type="checkbox"
                     checked={isOpen}
@@ -279,10 +311,10 @@ export default function StudentsTable({ data }: StudentsTableProps) {
                       </table>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
 
         {/* Table View */}
@@ -319,12 +351,15 @@ export default function StudentsTable({ data }: StudentsTableProps) {
         {data.grouped.length === 0 && (
           <div className="text-center py-12">
             <p className="text-gray-500 mb-4">No students found</p>
-            <Link href="/students/add" className="btn btn-primary">
-              Add Your First Student
-            </Link>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link href="/students/add" className="btn btn-primary">
+                Add Your First Student
+              </Link>
+            </motion.div>
           </div>
         )}
-      </div>
+        </div>
+      </PageTransition>
     );
   }
 
@@ -332,27 +367,35 @@ export default function StudentsTable({ data }: StudentsTableProps) {
   const sortedStudents = sortStudents(data.students || []);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Students</h1>
-        <div className="flex gap-2 items-center">
-          <label className="font-medium">Sort by:</label>
-          <select
-            className="select select-bordered select-sm"
-            value={sortBy}
-            onChange={(e) =>
-              setSortBy(e.target.value as "first" | "last" | "full")
-            }
-          >
-            <option value="first">First Name</option>
-            <option value="last">Last Name</option>
-            <option value="full">Full Name</option>
-          </select>
-          <Link href="/students/add" className="btn btn-primary">
-            Add Student
-          </Link>
-        </div>
-      </div>
+    <PageTransition>
+      <div className="max-w-7xl mx-auto space-y-6">
+        <motion.div
+          className="flex justify-between items-center"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <h1 className="text-2xl font-bold">Students</h1>
+          <div className="flex gap-2 items-center">
+            <label className="font-medium">Sort by:</label>
+            <select
+              className="select select-bordered select-sm"
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(e.target.value as "first" | "last" | "full")
+              }
+            >
+              <option value="first">First Name</option>
+              <option value="last">Last Name</option>
+              <option value="full">Full Name</option>
+            </select>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Link href="/students/add" className="btn btn-primary">
+                Add Student
+              </Link>
+            </motion.div>
+          </div>
+        </motion.div>
 
       <div className="card bg-base-100 shadow-xl">
         <div className="overflow-x-auto">
@@ -377,11 +420,14 @@ export default function StudentsTable({ data }: StudentsTableProps) {
       {sortedStudents.length === 0 && (
         <div className="text-center py-12">
           <p className="text-gray-500 mb-4">No students found</p>
-          <Link href="/students/add" className="btn btn-primary">
-            Add Your First Student
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/students/add" className="btn btn-primary">
+              Add Your First Student
+            </Link>
+          </motion.div>
         </div>
       )}
-    </div>
+      </div>
+    </PageTransition>
   );
 }

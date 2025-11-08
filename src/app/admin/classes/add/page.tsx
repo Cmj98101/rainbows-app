@@ -14,6 +14,7 @@ interface User {
 export default function AddClassPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [fetchingTeachers, setFetchingTeachers] = useState(true);
   const [error, setError] = useState("");
   const [teachers, setTeachers] = useState<User[]>([]);
 
@@ -39,6 +40,8 @@ export default function AddClassPage() {
       }
     } catch (err) {
       console.error("Failed to fetch teachers:", err);
+    } finally {
+      setFetchingTeachers(false);
     }
   };
 
@@ -87,6 +90,45 @@ export default function AddClassPage() {
       setLoading(false);
     }
   };
+
+  if (fetchingTeachers) {
+    return (
+      <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className="mb-6 animate-pulse">
+          <div className="h-8 bg-gray-300 rounded w-32"></div>
+        </div>
+
+        <div className="animate-pulse mb-6">
+          <div className="h-8 bg-gray-300 rounded w-48"></div>
+        </div>
+
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body space-y-4 animate-pulse">
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+              <div className="h-12 bg-gray-300 rounded"></div>
+            </div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-20 mb-2"></div>
+              <div className="h-12 bg-gray-300 rounded"></div>
+            </div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-24 mb-2"></div>
+              <div className="h-24 bg-gray-300 rounded"></div>
+            </div>
+            <div className="h-4 bg-gray-300 rounded w-32"></div>
+            <div className="form-control">
+              <div className="h-4 bg-gray-300 rounded w-40 mb-2"></div>
+              <div className="h-32 bg-gray-300 rounded"></div>
+            </div>
+            <div className="card-actions justify-end">
+              <div className="h-12 bg-gray-300 rounded w-32"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-2xl">

@@ -4,6 +4,7 @@ import "./globals.css";
 import { LayoutContent } from "@/components/LayoutContent";
 import { Analytics } from "@vercel/analytics/next";
 import SessionMonitor from "@/components/SessionMonitor";
+import { Toaster } from "sonner";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,6 +23,7 @@ export default function RootLayout({
       <body className={inter.className}>
         <SessionMonitor />
         <LayoutContent>{children}</LayoutContent>
+        <Toaster position="top-right" richColors />
         <Analytics />
       </body>
     </html>

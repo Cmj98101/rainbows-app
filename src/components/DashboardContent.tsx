@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { Suspense } from "react";
 import { StatCardSkeleton, ClassCardSkeleton, LoadingSpinner } from "./LoadingStates";
+import { motion } from "framer-motion";
+import { staggerContainer, staggerItem } from "./Animations";
 
 interface DashboardContentProps {
   stats: {
@@ -22,29 +24,34 @@ export function DashboardStats({
   classCount
 }: Pick<DashboardContentProps, 'stats' | 'isAdmin'> & { classCount?: number }) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="stat bg-base-100 shadow rounded-lg">
+    <motion.div
+      className="grid grid-cols-1 md:grid-cols-3 gap-4"
+      variants={staggerContainer}
+      initial="hidden"
+      animate="show"
+    >
+      <motion.div variants={staggerItem} className="stat bg-base-100 shadow rounded-lg">
         <div className="stat-title">Total Students</div>
         <div className="stat-value text-primary">{stats.totalStudents || 0}</div>
         <div className="stat-desc">{isAdmin ? 'Across all classes' : 'In your classes'}</div>
-      </div>
+      </motion.div>
       {isAdmin && (
         <>
-          <div className="stat bg-base-100 shadow rounded-lg">
+          <motion.div variants={staggerItem} className="stat bg-base-100 shadow rounded-lg">
             <div className="stat-title">Recent Tests</div>
             <div className="stat-value text-2xl">{stats.recentTests?.length || 0}</div>
             <div className="stat-desc">
               {stats.testPassRate}% average pass rate
             </div>
-          </div>
-          <div className="stat bg-base-100 shadow rounded-lg">
+          </motion.div>
+          <motion.div variants={staggerItem} className="stat bg-base-100 shadow rounded-lg">
             <div className="stat-title">Classes</div>
             <div className="stat-value text-2xl">{classCount || 0}</div>
             <div className="stat-desc">Active classes</div>
-          </div>
+          </motion.div>
         </>
       )}
-    </div>
+    </motion.div>
   );
 }
 
@@ -64,48 +71,84 @@ export function DashboardStatsLoading({ isAdmin }: { isAdmin: boolean }) {
 
 export function QuickActions({ isAdmin }: { isAdmin: boolean }) {
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <motion.div
+      className="card bg-base-100 shadow-xl"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.2 }}
+    >
       <div className="card-body">
         <h2 className="card-title">Quick Actions</h2>
         <div className="flex flex-wrap gap-2">
-          <Link href="/attendance/take-roll" className="btn btn-primary">
-            Take Attendance
-          </Link>
-          <Link href="/students/add" className="btn btn-secondary">
-            Add Student
-          </Link>
-          <Link href="/tests/add" className="btn btn-accent">
-            Add Test
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/attendance/take-roll" className="btn btn-primary">
+              Take Attendance
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/students/add" className="btn btn-secondary">
+              Add Student
+            </Link>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/tests/add" className="btn btn-accent">
+              Add Test
+            </Link>
+          </motion.div>
           {isAdmin && (
             <>
-              <Link href="/admin/classes/add" className="btn btn-ghost">
-                Create Class
-              </Link>
-              <Link href="/admin/users/add" className="btn btn-ghost">
-                Add User
-              </Link>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Link href="/admin/classes/add" className="btn btn-ghost">
+                  Create Class
+                </Link>
+              </motion.div>
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Link href="/admin/users/add" className="btn btn-ghost">
+                  Add User
+                </Link>
+              </motion.div>
             </>
           )}
         </div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
 export function ClassOverview({ classSummary }: { classSummary: any[] }) {
   return (
-    <div className="card bg-base-100 shadow-xl">
+    <motion.div
+      className="card bg-base-100 shadow-xl"
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.3, delay: 0.3 }}
+    >
       <div className="card-body">
         <div className="flex justify-between items-center mb-4">
           <h2 className="card-title">Class Overview</h2>
-          <Link href="/admin/classes" className="btn btn-sm btn-ghost">
-            Manage Classes
-          </Link>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+            <Link href="/admin/classes" className="btn btn-sm btn-ghost">
+              Manage Classes
+            </Link>
+          </motion.div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <motion.div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          variants={staggerContainer}
+          initial="hidden"
+          animate="show"
+        >
           {classSummary.map((cls: any) => (
-            <div key={cls.id} className="card bg-base-200">
+            <motion.div
+              key={cls.id}
+              variants={staggerItem}
+              className="card bg-base-200"
+              whileHover={{
+                y: -4,
+                boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1)"
+              }}
+              transition={{ duration: 0.2 }}
+            >
               <div className="card-body">
                 <h3 className="card-title text-lg">{cls.name}</h3>
                 {cls.ageGroup && (
@@ -135,11 +178,11 @@ export function ClassOverview({ classSummary }: { classSummary: any[] }) {
                   </Link>
                 </div>
               </div>
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }
 
