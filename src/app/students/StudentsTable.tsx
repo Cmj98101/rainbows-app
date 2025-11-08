@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState, useMemo } from "react";
 import { Student } from "@/types/student";
+import { StatCardSkeleton, AccordionSkeleton, TableRowSkeleton } from "@/components/LoadingStates";
 
 interface GroupedData {
   classId: string | null;

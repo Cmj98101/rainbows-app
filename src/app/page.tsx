@@ -5,6 +5,16 @@ import { redirect } from "next/navigation";
 import { getDashboardStats } from "@/lib/supabase-helpers";
 import { getCurrentChurchId, getSession, hasRole, getCurrentUserId } from "@/lib/auth-helpers";
 import { supabaseAdmin } from "@/lib/supabase";
+import { Suspense } from "react";
+import {
+  DashboardStats,
+  DashboardStatsLoading,
+  QuickActions,
+  ClassOverview,
+  ClassOverviewLoading,
+  RecentTests
+} from "@/components/DashboardContent";
+import { LoadingSpinner } from "@/components/LoadingStates";
 
 async function getDashboardData() {
   try {
@@ -194,146 +204,25 @@ export default async function Home() {
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="stat bg-base-100 shadow rounded-lg">
-          <div className="stat-title">Total Students</div>
-          <div className="stat-value text-primary">{stats.totalStudents || 0}</div>
-          <div className="stat-desc">Across all classes</div>
-        </div>
-        <div className="stat bg-base-100 shadow rounded-lg">
-          <div className="stat-title">Recent Tests</div>
-          <div className="stat-value text-2xl">{stats.recentTests?.length || 0}</div>
-          <div className="stat-desc">
-            {stats.testPassRate}% average pass rate
-          </div>
-        </div>
-        <div className="stat bg-base-100 shadow rounded-lg">
-          <div className="stat-title">Classes</div>
-          <div className="stat-value text-2xl">{classSummary?.length || 0}</div>
-          <div className="stat-desc">Active classes</div>
-        </div>
-      </div>
+      <Suspense fallback={<DashboardStatsLoading isAdmin={isAdmin} />}>
+        <DashboardStats stats={stats} isAdmin={isAdmin} classCount={classSummary?.length || 0} />
+      </Suspense>
 
       {/* Quick Actions */}
-      <div className="card bg-base-100 shadow-xl">
-        <div className="card-body">
-          <h2 className="card-title">Quick Actions</h2>
-          <div className="flex flex-wrap gap-2">
-            <Link href="/attendance/take-roll" className="btn btn-primary">
-              Take Attendance
-            </Link>
-            <Link href="/students/add" className="btn btn-secondary">
-              Add Student
-            </Link>
-            <Link href="/tests/add" className="btn btn-accent">
-              Add Test
-            </Link>
-            {isAdmin && (
-              <>
-                <Link href="/admin/classes/add" className="btn btn-ghost">
-                  Create Class
-                </Link>
-                <Link href="/admin/users/add" className="btn btn-ghost">
-                  Add User
-                </Link>
-              </>
-            )}
-          </div>
-        </div>
-      </div>
+      <QuickActions isAdmin={isAdmin} />
 
       {/* Class Summary for Admins */}
       {isAdmin && classSummary && classSummary.length > 0 && (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="card-title">Class Overview</h2>
-              <Link href="/admin/classes" className="btn btn-sm btn-ghost">
-                Manage Classes
-              </Link>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {classSummary.map((cls: any) => (
-                <div key={cls.id} className="card bg-base-200">
-                  <div className="card-body">
-                    <h3 className="card-title text-lg">{cls.name}</h3>
-                    {cls.ageGroup && (
-                      <p className="badge badge-secondary badge-sm">{cls.ageGroup}</p>
-                    )}
-                    <div className="space-y-2 mt-2">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Students:</span>
-                        <span className="font-semibold">{cls.studentCount}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-600">Teachers:</span>
-                        <span className="font-semibold">{cls.teacherCount}</span>
-                      </div>
-                      {cls.teachers.length > 0 && (
-                        <div className="text-xs text-gray-500 mt-2">
-                          {cls.teachers.join(', ')}
-                        </div>
-                      )}
-                    </div>
-                    <div className="card-actions justify-end mt-4">
-                      <Link
-                        href={`/admin/classes/${cls.id}/edit`}
-                        className="btn btn-xs btn-ghost"
-                      >
-                        Manage
-                      </Link>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+        <Suspense fallback={<ClassOverviewLoading />}>
+          <ClassOverview classSummary={classSummary} />
+        </Suspense>
       )}
 
-      {/* Recent Tests */}
-      {stats.recentTests && stats.recentTests.length > 0 && (
-        <div className="card bg-base-100 shadow-xl">
-          <div className="card-body">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="card-title">Recent Tests</h2>
-              <Link href="/tests" className="btn btn-sm btn-ghost">
-                View All
-              </Link>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="table w-full">
-                <thead>
-                  <tr>
-                    <th>Test Name</th>
-                    <th>Date</th>
-                    <th>Pass Rate</th>
-                    <th>Students</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.recentTests.slice(0, 5).map((test: any) => (
-                    <tr key={test.id}>
-                      <td className="font-medium">{test.name}</td>
-                      <td>{new Date(test.date).toLocaleDateString()}</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <span>{test.passRate}%</span>
-                          <progress
-                            className="progress progress-primary w-20"
-                            value={test.passRate}
-                            max="100"
-                          ></progress>
-                        </div>
-                      </td>
-                      <td>{test.totalStudents}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+      {/* Recent Tests (Admin Only) */}
+      {isAdmin && stats.recentTests && stats.recentTests.length > 0 && (
+        <Suspense fallback={<LoadingSpinner />}>
+          <RecentTests tests={stats.recentTests} />
+        </Suspense>
       )}
 
       <QuickAttendanceView />
