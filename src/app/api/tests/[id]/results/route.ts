@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { saveTestResults } from "@/lib/supabase-helpers";
-import { getTempChurchId } from "@/lib/temp-auth";
 
 export async function POST(
   request: Request,
