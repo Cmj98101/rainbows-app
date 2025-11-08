@@ -106,9 +106,10 @@ export async function PUT(
       }
     }
 
+    const updateData: any = { name, role, permissions };
     const { data: user, error } = await supabaseAdmin
       .from('users')
-      .update({ name, role, permissions } as any)
+      .update(updateData)
       .eq('id', id)
       .eq('church_id', churchId)
       .select(`

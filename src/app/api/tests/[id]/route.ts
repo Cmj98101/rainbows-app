@@ -45,9 +45,10 @@ export async function PUT(
     const churchId = await getCurrentChurchId();
     const { name, date, description } = await request.json();
 
+    const updateData: any = { name, date, description };
     const { data: test, error } = await supabaseAdmin
       .from('tests')
-      .update({ name, date, description } as any)
+      .update(updateData)
       .eq('id', id)
       .eq('church_id', churchId)
       .select()

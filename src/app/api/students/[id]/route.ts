@@ -177,9 +177,10 @@ export async function PUT(
         .eq('student_id', id);
 
       // Insert new guardians
+      const guardiansData: any = validGuardians;
       await supabaseAdmin
         .from('guardians')
-        .insert(validGuardians as any);
+        .insert(guardiansData);
     }
 
     // Return updated student with guardians (formatted)

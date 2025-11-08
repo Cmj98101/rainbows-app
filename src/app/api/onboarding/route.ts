@@ -26,15 +26,16 @@ export async function POST(request: Request) {
     }
 
     // Step 1: Create the church
+    const churchData: any = {
+      name: churchName,
+      email: churchEmail,
+      phone: churchPhone,
+      address: churchAddress || {},
+      subscription: 'free',
+    };
     const { data: church, error: churchError } = await supabaseAdmin
       .from('churches')
-      .insert({
-        name: churchName,
-        email: churchEmail,
-        phone: churchPhone,
-        address: churchAddress || {},
-        subscription: 'free',
-      } as any)
+      .insert(churchData)
       .select()
       .single();
 
@@ -65,23 +66,24 @@ export async function POST(request: Request) {
     }
 
     // Step 3: Create user profile with church_admin role
+    const userData: any = {
+      id: authUser.user.id,
+      church_id: church.id,
+      email: adminEmail,
+      name: adminName,
+      role: 'church_admin',
+      permissions: {
+        canManageUsers: true,
+        canManageClasses: true,
+        canEditStudents: true,
+        canTakeAttendance: true,
+        canManageTests: true,
+        canViewReports: true,
+      },
+    };
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .insert({
-        id: authUser.user.id,
-        church_id: church.id,
-        email: adminEmail,
-        name: adminName,
-        role: 'church_admin',
-        permissions: {
-          canManageUsers: true,
-          canManageClasses: true,
-          canEditStudents: true,
-          canTakeAttendance: true,
-          canManageTests: true,
-          canViewReports: true,
-        },
-      } as any)
+      .insert(userData)
       .select()
       .single();
 

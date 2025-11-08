@@ -43,15 +43,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const insertData: any = {
+      name,
+      email,
+      phone,
+      address: address || {},
+      subscription: 'free',
+    };
     const { data: church, error } = await supabaseAdmin
       .from('churches')
-      .insert({
-        name,
-        email,
-        phone,
-        address: address || {},
-        subscription: 'free',
-      } as any)
+      .insert(insertData)
       .select()
       .single();
 
@@ -77,9 +78,10 @@ export async function PUT(request: Request) {
     const churchId = await getCurrentChurchId();
     const { name, email, phone, address } = await request.json();
 
+    const updateData: any = { name, email, phone, address };
     const { data: church, error } = await supabaseAdmin
       .from('churches')
-      .update({ name, email, phone, address } as any)
+      .update(updateData)
       .eq('id', churchId)
       .select()
       .single();

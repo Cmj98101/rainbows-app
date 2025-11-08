@@ -151,16 +151,17 @@ export async function POST(request: Request) {
     }
 
     // Create user profile in users table
+    const insertData: any = {
+      id: authUser.user.id, // Use the same ID as auth user
+      church_id: churchId,
+      email,
+      name,
+      role,
+      permissions: permissions || defaultPermissions,
+    };
     const { data: user, error: userError } = await supabaseAdmin
       .from('users')
-      .insert({
-        id: authUser.user.id, // Use the same ID as auth user
-        church_id: churchId,
-        email,
-        name,
-        role,
-        permissions: permissions || defaultPermissions,
-      } as any)
+      .insert(insertData)
       .select(`
         *,
         church:churches (
