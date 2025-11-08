@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
-import { Providers } from "./providers";
 import { LayoutContent } from "@/components/LayoutContent";
 import { Analytics } from "@vercel/analytics/next";
 
@@ -20,9 +19,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>
-          <LayoutContent>{children}</LayoutContent>
-        </Providers>
+        <LayoutContent>{children}</LayoutContent>
         <Analytics />
       </body>
     </html>

@@ -143,7 +143,11 @@ export default function ViewStudentPage({
                         Address
                       </p>
                       <p className="mt-1">
-                        {guardian.address || "Not provided"}
+                        {guardian.address
+                          ? (typeof guardian.address === 'string'
+                              ? guardian.address
+                              : JSON.stringify(guardian.address))
+                          : "Not provided"}
                       </p>
                     </div>
                   </div>

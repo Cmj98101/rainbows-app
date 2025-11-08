@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { getAttendanceByDate, getAttendanceStats } from "@/lib/supabase-helpers";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getTempChurchId } from "@/lib/temp-auth";
+import { getCurrentChurchId, requireAuth, hasRole, getCurrentUserId } from "@/lib/auth-helpers";
 
 export async function GET(request: Request) {
   try {
-    const churchId = await getTempChurchId();
+    await requireAuth();
+    const churchId = await getCurrentChurchId();
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
@@ -24,6 +25,10 @@ export async function GET(request: Request) {
       return NextResponse.json(stats);
     }
 
+    // Check if user is a teacher (non-admin)
+    const isTeacher = await hasRole('teacher');
+    const isAdmin = await hasRole('admin') || await hasRole('church_admin');
+
     // Get all students with their attendance (optionally filtered by date range)
     let query = supabaseAdmin
       .from('students')
@@ -31,14 +36,35 @@ export async function GET(request: Request) {
         id,
         first_name,
         last_name,
+        class_id,
         attendance (
           id,
           date,
           present
         )
       `)
-      .eq('church_id', churchId)
-      .order('last_name', { ascending: true });
+      .eq('church_id', churchId);
+
+    // If teacher (non-admin), filter to only their assigned classes
+    if (isTeacher && !isAdmin) {
+      const userId = await getCurrentUserId();
+
+      // Get teacher's assigned class IDs
+      const { data: classAssignments } = await supabaseAdmin
+        .from('class_teachers')
+        .select('class_id')
+        .eq('teacher_id', userId);
+
+      if (classAssignments && classAssignments.length > 0) {
+        const classIds = classAssignments.map(ca => ca.class_id);
+        query = query.in('class_id', classIds);
+      } else {
+        // Teacher has no classes assigned, return empty
+        return NextResponse.json([]);
+      }
+    }
+
+    query = query.order('last_name', { ascending: true });
 
     const { data: students, error } = await query;
 
@@ -58,6 +84,7 @@ export async function GET(request: Request) {
         _id: student.id, // Keep MongoDB format for compatibility
         firstName: student.first_name,
         lastName: student.last_name,
+        classId: student.class_id,
         attendance: filteredAttendance,
       };
     });
@@ -74,7 +101,8 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   try {
-    const churchId = await getTempChurchId();
+    await requireAuth();
+    const churchId = await getCurrentChurchId();
     const body = await request.json();
 
     // Support both single and batch attendance submissions

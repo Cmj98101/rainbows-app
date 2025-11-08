@@ -20,11 +20,18 @@ interface Student {
   lastName: string;
   birthday: string;
   gender: string;
+  classId?: string;
   email?: string;
   phone?: string;
   address?: string;
   guardians: Guardian[];
   notes?: string;
+}
+
+interface Class {
+  id: string;
+  name: string;
+  age_group?: string;
 }
 
 function formatPhoneNumber(value: string) {
@@ -47,19 +54,27 @@ export default function EditStudentPage({
   const { id } = use(params);
   const router = useRouter();
   const [student, setStudent] = useState<Student | null>(null);
+  const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStudent = async () => {
+    const fetchData = async () => {
       try {
-        const response = await fetch(`/api/students/${id}`);
-        if (!response.ok) {
+        // Fetch student and classes in parallel
+        const [studentRes, classesRes] = await Promise.all([
+          fetch(`/api/students/${id}`),
+          fetch("/api/classes"),
+        ]);
+
+        if (!studentRes.ok) {
           throw new Error("Failed to fetch student");
         }
-        const data = await response.json();
-        console.log("Fetched student data in edit page:", data); // Debug log
-        console.log("Guardians data:", data.guardians); // Debug log
+
+        const data = await studentRes.json();
+        console.log("Fetched student data in edit page:", data);
+
         setStudent({
           ...data,
           birthday: data.birthday
@@ -67,6 +82,11 @@ export default function EditStudentPage({
             : "",
           guardians: data.guardians || [],
         });
+
+        if (classesRes.ok) {
+          const classesData = await classesRes.json();
+          setClasses(classesData);
+        }
       } catch (err) {
         setError("Failed to load student data");
         console.error(err);
@@ -75,12 +95,21 @@ export default function EditStudentPage({
       }
     };
 
-    fetchStudent();
+    fetchData();
   }, [id]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!student) return;
+
+    // Validate class is selected
+    if (!student.classId) {
+      setError("Please select a class for the student");
+      return;
+    }
+
+    setSubmitting(true);
+    setError(null);
 
     try {
       const submitData = {
@@ -123,6 +152,8 @@ export default function EditStudentPage({
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to update student");
       console.error(err);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -252,6 +283,32 @@ export default function EditStudentPage({
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Class *
+              </label>
+              <select
+                value={student.classId || ""}
+                onChange={(e) =>
+                  setStudent({ ...student, classId: e.target.value })
+                }
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+              >
+                <option value="">Select a class...</option>
+                {classes.map((cls) => (
+                  <option key={cls.id} value={cls.id}>
+                    {cls.name}
+                    {cls.age_group ? ` (${cls.age_group})` : ""}
+                  </option>
+                ))}
+              </select>
+              {classes.length === 0 && (
+                <p className="mt-1 text-sm text-red-600">
+                  No classes available. Please create a class first.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -402,9 +459,10 @@ export default function EditStudentPage({
           </Link>
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={submitting}
           >
-            Save Changes
+            {submitting ? "Saving..." : "Save Changes"}
           </button>
         </div>
       </form>

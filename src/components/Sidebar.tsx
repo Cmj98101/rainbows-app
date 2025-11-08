@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { signOut } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import {
   HomeIcon,
   UserGroupIcon,
@@ -9,16 +10,36 @@ import {
   ClipboardDocumentCheckIcon,
   ChartBarIcon,
   ArrowRightOnRectangleIcon,
+  AcademicCapIcon,
+  UsersIcon,
 } from "@heroicons/react/24/outline";
 
 function SignOutButton() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  const handleSignOut = async () => {
+    setLoading(true);
+    try {
+      await fetch("/api/auth/signout", {
+        method: "POST",
+        credentials: 'include', // Send cookies
+      });
+      window.location.href = "/auth/signin"; // Full page reload to clear session
+    } catch (error) {
+      console.error("Sign out error:", error);
+      setLoading(false);
+    }
+  };
+
   return (
     <button
-      onClick={() => signOut({ callbackUrl: "/auth/signin" })}
-      className="text-red-600 hover:text-red-700"
+      onClick={handleSignOut}
+      disabled={loading}
+      className="text-red-600 hover:text-red-700 disabled:opacity-50"
     >
       <ArrowRightOnRectangleIcon className="h-5 w-5" />
-      Sign Out
+      {loading ? "Signing out..." : "Sign Out"}
     </button>
   );
 }
@@ -31,6 +52,31 @@ function closeDrawer() {
 }
 
 export function Sidebar() {
+  const [session, setSession] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Fetch session on mount
+    fetch("/api/auth/session", {
+      credentials: 'include', // Important: send cookies with request
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+      .then(async (res) => {
+        const data = await res.json();
+        if (data.session) {
+          setSession(data.session);
+        }
+        return data;
+      })
+      .catch((error) => console.error("Failed to fetch session:", error))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const canManageUsers = session?.user?.permissions?.canManageUsers;
+  const canManageClasses = session?.user?.permissions?.canManageClasses;
+
   return (
     <ul className="menu p-4 w-80 min-h-full bg-base-200 text-base-content dark:bg-neutral dark:text-base-100">
       <li className="menu-title">Navigation</li>
@@ -74,12 +120,37 @@ export function Sidebar() {
           Tests
         </Link>
       </li>
-      {/* <li>
-        <Link href="/reports">
-          <ChartBarIcon className="h-5 w-5" />
-          Reports
-        </Link>
-      </li> */}
+
+      {/* Admin Section - Only show if user has permissions */}
+      {!loading && (canManageUsers || canManageClasses) && (
+        <>
+          <li className="menu-title mt-4">Administration</li>
+          {canManageClasses && (
+            <li>
+              <Link
+                href="/admin/classes"
+                className="text-base-content dark:text-white"
+                onClick={closeDrawer}
+              >
+                <AcademicCapIcon className="h-5 w-5" />
+                Classes
+              </Link>
+            </li>
+          )}
+          {canManageUsers && (
+            <li>
+              <Link
+                href="/admin/users"
+                className="text-base-content dark:text-white"
+                onClick={closeDrawer}
+              >
+                <UsersIcon className="h-5 w-5" />
+                Users
+              </Link>
+            </li>
+          )}
+        </>
+      )}
 
       <li className="menu-title mt-4">Quick Actions</li>
       <li>

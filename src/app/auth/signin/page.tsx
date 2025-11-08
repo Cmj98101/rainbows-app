@@ -1,6 +1,5 @@
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import Link from "next/link";
@@ -20,19 +19,27 @@ export default function SignIn() {
     const password = formData.get("password") as string;
 
     try {
-      const result = await signIn("credentials", {
-        email,
-        password,
-        redirect: false,
-        callbackUrl: "/",
+      const response = await fetch("/api/auth/signin", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
       });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push("/");
-        router.refresh();
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || "Invalid credentials");
+        return;
       }
+
+      // Successfully signed in
+      // Wait a bit to ensure cookies are set before redirecting
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Use window.location for full page reload
+      window.location.href = "/";
     } catch (err) {
       setError("An error occurred during sign in");
     } finally {
@@ -94,13 +101,18 @@ export default function SignIn() {
             </button>
           </div>
 
-          <div className="text-sm text-center">
-            <Link
-              href="/auth/register"
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Need an account? Register here
-            </Link>
+          <div className="text-sm text-center space-y-2">
+            <div>
+              <Link
+                href="/onboarding"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                New church? Set up your organization
+              </Link>
+            </div>
+            <div className="text-gray-500 text-xs">
+              Contact your church admin for an account
+            </div>
           </div>
         </form>
       </div>

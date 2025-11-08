@@ -8,6 +8,162 @@ import { supabaseAdmin } from './supabase';
 import type { Student, Guardian, Attendance, Test, TestResult, User } from '@/types/supabase';
 
 // ============================================================================
+// CLASS OPERATIONS
+// ============================================================================
+
+/**
+ * Get all classes for a church
+ */
+export async function getClasses(churchId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('classes')
+    .select(`
+      *,
+      teachers:class_teachers (
+        user:users (
+          id,
+          name,
+          email
+        )
+      )
+    `)
+    .eq('church_id', churchId)
+    .order('name', { ascending: true });
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get a single class by ID
+ */
+export async function getClassById(classId: string, churchId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('classes')
+    .select(`
+      *,
+      teachers:class_teachers (
+        user:users (
+          id,
+          name,
+          email
+        )
+      )
+    `)
+    .eq('id', classId)
+    .eq('church_id', churchId)
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Create a new class
+ */
+export async function createClass(
+  churchId: string,
+  classData: {
+    name: string;
+    age_group?: string;
+    description?: string;
+    schedule?: any;
+  }
+) {
+  const { data, error } = await supabaseAdmin
+    .from('classes')
+    .insert({
+      church_id: churchId,
+      ...classData,
+    })
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Update a class
+ */
+export async function updateClass(
+  classId: string,
+  churchId: string,
+  updates: Partial<{
+    name: string;
+    age_group: string;
+    description: string;
+    schedule: any;
+  }>
+) {
+  const { data, error } = await supabaseAdmin
+    .from('classes')
+    .update(updates)
+    .eq('id', classId)
+    .eq('church_id', churchId)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Delete a class
+ */
+export async function deleteClass(classId: string, churchId: string) {
+  const { error } = await supabaseAdmin
+    .from('classes')
+    .delete()
+    .eq('id', classId)
+    .eq('church_id', churchId);
+
+  if (error) throw error;
+}
+
+/**
+ * Assign teachers to a class
+ */
+export async function assignTeachersToClass(classId: string, teacherIds: string[]) {
+  // First, remove all existing assignments for this class
+  await supabaseAdmin
+    .from('class_teachers')
+    .delete()
+    .eq('class_id', classId);
+
+  // Then insert new assignments
+  if (teacherIds.length > 0) {
+    const assignments = teacherIds.map((teacherId) => ({
+      class_id: classId,
+      teacher_id: teacherId,
+    }));
+
+    const { error } = await supabaseAdmin
+      .from('class_teachers')
+      .insert(assignments);
+
+    if (error) throw error;
+  }
+}
+
+/**
+ * Get classes for a specific teacher
+ */
+export async function getClassesForTeacher(teacherId: string) {
+  const { data, error } = await supabaseAdmin
+    .from('class_teachers')
+    .select(`
+      class:classes (
+        *
+      )
+    `)
+    .eq('teacher_id', teacherId);
+
+  if (error) throw error;
+  return data.map((item: any) => item.class);
+}
+
+// ============================================================================
 // STUDENT OPERATIONS
 // ============================================================================
 
@@ -34,6 +190,38 @@ export async function getStudentsWithGuardians(churchId: string, classId?: strin
   }
 
   const { data, error } = await query;
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get students for a specific teacher (only their assigned classes)
+ */
+export async function getStudentsForTeacher(teacherId: string, churchId: string) {
+  // First get the teacher's class IDs
+  const classes = await getClassesForTeacher(teacherId);
+  const classIds = classes.map((c: any) => c.id);
+
+  if (classIds.length === 0) {
+    return []; // Teacher has no classes assigned
+  }
+
+  // Get students in those classes
+  const { data, error } = await supabaseAdmin
+    .from('students')
+    .select(`
+      *,
+      guardians (*),
+      class:classes (
+        id,
+        name,
+        age_group
+      )
+    `)
+    .eq('church_id', churchId)
+    .in('class_id', classIds)
+    .order('last_name', { ascending: true });
 
   if (error) throw error;
   return data;
@@ -162,23 +350,6 @@ export async function getAttendanceByDate(churchId: string, date: string, classI
     .from('attendance')
     .select(`
       *,
-      student:students (
-        id,
-        first_name,
-        last_name
-      ),
-      class:classes (
-        id,
-        name
-      )
-    `)
-    .eq('date', date);
-
-  // Join with students to filter by church
-  const { data, error } = await supabaseAdmin
-    .from('attendance')
-    .select(`
-      *,
       student:students!inner (
         id,
         first_name,
@@ -189,6 +360,12 @@ export async function getAttendanceByDate(churchId: string, date: string, classI
     .eq('student.church_id', churchId)
     .eq('date', date)
     .order('student.last_name', { ascending: true });
+
+  if (classId) {
+    query = query.eq('class_id', classId);
+  }
+
+  const { data, error } = await query;
 
   if (error) throw error;
   return data;
@@ -306,6 +483,47 @@ export async function getTests(churchId: string, classId?: string) {
   }
 
   const { data, error } = await query;
+
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Get tests for a specific teacher (only their assigned classes)
+ */
+export async function getTestsForTeacher(teacherId: string, churchId: string) {
+  // First get the teacher's assigned class IDs
+  const { data: classAssignments, error: classError } = await supabaseAdmin
+    .from('class_teachers')
+    .select('class_id')
+    .eq('teacher_id', teacherId);
+
+  if (classError) throw classError;
+
+  if (!classAssignments || classAssignments.length === 0) {
+    return []; // Teacher has no classes assigned
+  }
+
+  const classIds = classAssignments.map(ca => ca.class_id);
+
+  // Get tests for those classes
+  const { data, error } = await supabaseAdmin
+    .from('tests')
+    .select(`
+      *,
+      class:classes (
+        id,
+        name
+      ),
+      test_results (
+        id,
+        status,
+        student_id
+      )
+    `)
+    .eq('church_id', churchId)
+    .in('class_id', classIds)
+    .order('date', { ascending: false });
 
   if (error) throw error;
   return data;

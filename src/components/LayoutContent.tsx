@@ -7,8 +7,10 @@ import { Sidebar } from "./Sidebar";
 export function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isAuthPage = pathname?.startsWith("/auth/");
+  const isOnboarding = pathname === "/onboarding";
 
-  if (isAuthPage) {
+  // Don't show sidebar/navbar for auth and onboarding pages
+  if (isAuthPage || isOnboarding) {
     return <div className="min-h-screen">{children}</div>;
   }
 

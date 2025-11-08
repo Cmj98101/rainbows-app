@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 interface Guardian {
@@ -24,15 +24,24 @@ function formatPhoneNumber(value: string) {
   return formatted;
 }
 
+interface Class {
+  id: string;
+  name: string;
+  age_group?: string;
+}
+
 export default function AddStudentPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [loadingClasses, setLoadingClasses] = useState(true);
   const [error, setError] = useState("");
+  const [classes, setClasses] = useState<Class[]>([]);
   const [student, setStudent] = useState({
     firstName: "",
     lastName: "",
     birthday: "",
     gender: "",
+    classId: "",
     guardians: [
       {
         name: "",
@@ -45,6 +54,22 @@ export default function AddStudentPage() {
     ],
     notes: "",
   });
+
+  useEffect(() => {
+    // Fetch available classes
+    setLoadingClasses(true);
+    fetch("/api/classes")
+      .then((res) => res.json())
+      .then((data) => {
+        setClasses(data);
+        // Auto-select first class if available
+        if (data.length > 0) {
+          setStudent(prev => ({ ...prev, classId: data[0].id }));
+        }
+      })
+      .catch((error) => console.error("Failed to fetch classes:", error))
+      .finally(() => setLoadingClasses(false));
+  }, []);
 
   const addGuardian = () => {
     setStudent({
@@ -95,6 +120,11 @@ export default function AddStudentPage() {
     setError("");
 
     try {
+      // Validate class is selected
+      if (!student.classId) {
+        throw new Error("Please select a class for the student");
+      }
+
       // Validate required guardian fields
       const validGuardians = student.guardians.filter(
         (guardian) => guardian.name && guardian.relationship && guardian.phone
@@ -146,6 +176,13 @@ export default function AddStudentPage() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="text-2xl font-bold mb-6">Add New Student</h1>
+
+      {!loadingClasses && classes.length === 0 && (
+        <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 px-4 py-3 rounded mb-6">
+          <p className="font-medium">No classes available</p>
+          <p className="text-sm">Please create at least one class before adding students. All students must be assigned to a class.</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Basic Information */}
@@ -211,6 +248,41 @@ export default function AddStudentPage() {
                 <option value="female">Female</option>
                 <option value="other">Other</option>
               </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Class *
+              </label>
+              <select
+                value={student.classId}
+                onChange={(e) =>
+                  setStudent({ ...student, classId: e.target.value })
+                }
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                required
+                disabled={loadingClasses}
+              >
+                {loadingClasses ? (
+                  <option value="">Loading classes...</option>
+                ) : classes.length === 0 ? (
+                  <option value="">No classes available</option>
+                ) : (
+                  <>
+                    <option value="">Select a class...</option>
+                    {classes.map((cls) => (
+                      <option key={cls.id} value={cls.id}>
+                        {cls.name}
+                        {cls.age_group ? ` (${cls.age_group})` : ""}
+                      </option>
+                    ))}
+                  </>
+                )}
+              </select>
+              {!loadingClasses && classes.length === 0 && (
+                <p className="mt-1 text-sm text-red-600">
+                  No classes available. Please create a class before adding students.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -369,10 +441,10 @@ export default function AddStudentPage() {
           </button>
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            disabled={loading}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            disabled={loading || loadingClasses || classes.length === 0}
           >
-            {loading ? "Creating..." : "Create Student"}
+            {loading ? "Creating..." : loadingClasses ? "Loading..." : classes.length === 0 ? "No Classes Available" : "Create Student"}
           </button>
         </div>
       </form>

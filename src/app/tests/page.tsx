@@ -1,84 +1,76 @@
-import Link from "next/link";
-import { getServerSession } from "next-auth";
 import { redirect } from "next/navigation";
-import connectDB from "@/lib/db";
-import Test from "@/models/Test";
-
-interface Test {
-  _id: string;
-  name: string;
-  date: string;
-  passRate: number;
-}
+import { getSession, getCurrentChurchId, getCurrentUserId, hasRole } from "@/lib/auth-helpers";
+import { getTestsForTeacher } from "@/lib/supabase-helpers";
+import TestsTable from "./TestsTable";
 
 async function getTests() {
   try {
-    await connectDB();
-    const tests = await Test.find({}).sort({ date: -1 }).lean();
-    return tests as unknown as Test[];
+    const session = await getSession();
+    if (!session) {
+      throw new Error('Not authenticated');
+    }
+
+    const churchId = await getCurrentChurchId();
+    const isTeacher = await hasRole('teacher');
+    const isAdmin = await hasRole('admin') || await hasRole('church_admin');
+
+    // For admins, use the API endpoint to get grouped data
+    if (isAdmin) {
+      const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/tests?groupByClass=true`, {
+        headers: {
+          'Cookie': `supabase-auth-token=${session.access_token}`
+        },
+        cache: 'no-store'
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch grouped tests');
+      }
+
+      return {
+        grouped: await response.json(),
+        isGrouped: true
+      };
+    }
+
+    // For teachers, get flat list
+    const userId = await getCurrentUserId();
+    const tests = await getTestsForTeacher(userId, churchId);
+
+    // Format for frontend compatibility
+    return {
+      tests: tests.map((test: any) => {
+        const results = test.test_results || [];
+        const passed = results.filter((r: any) => r.status === 'passed').length;
+        const total = results.filter((r: any) => r.status !== 'absent').length;
+        const passRate = total > 0 ? Math.round((passed / total) * 100) : 0;
+
+        return {
+          _id: test.id,
+          name: test.name,
+          date: test.date,
+          description: test.description,
+          passRate,
+          totalStudents: results.length,
+          className: test.class?.name,
+        };
+      }),
+      isGrouped: false
+    };
   } catch (error) {
     console.error("Error fetching tests:", error);
-    throw new Error("Failed to fetch tests");
+    throw error;
   }
 }
 
 export default async function TestsPage() {
-  const session = await getServerSession();
+  const session = await getSession();
 
   if (!session) {
     redirect("/auth/signin");
   }
 
-  const tests = await getTests();
-
-  return (
-    <div className="max-w-7xl mx-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-2xl font-bold">Tests</h1>
-        <Link href="/tests/add" className="btn btn-primary">
-          Add Test
-        </Link>
-      </div>
-
-      <div className="card bg-base-100 shadow-xl">
-        <div className="overflow-x-auto">
-          <table className="table w-full">
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Date</th>
-                <th>Pass Rate</th>
-                <th className="text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tests.map((test) => (
-                <tr key={test._id}>
-                  <td className="font-medium">{test.name}</td>
-                  <td>{new Date(test.date).toLocaleDateString()}</td>
-                  <td>{test.passRate}%</td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Link
-                        href={`/tests/${test._id}/results`}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        View
-                      </Link>
-                      <Link
-                        href={`/tests/${test._id}/edit`}
-                        className="btn btn-ghost btn-sm"
-                      >
-                        Edit
-                      </Link>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
+  const data = await getTests();
+  const plainData = JSON.parse(JSON.stringify(data));
+  return <TestsTable data={plainData} />;
 }

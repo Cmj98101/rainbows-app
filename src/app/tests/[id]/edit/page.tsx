@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { use } from "react";
+import { useRouter } from "next/navigation";
 
-export default function EditTestPage() {
-  const params = useParams();
+export default function EditTestPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id: testId } = use(params);
   const router = useRouter();
-  const testId = Array.isArray(params.id) ? params.id[0] : params.id;
   const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [loading, setLoading] = useState(true);

@@ -6,11 +6,13 @@ interface Student {
   _id: string;
   firstName: string;
   lastName: string;
+  classId?: string;
   attendance: { date: string; present: boolean }[];
 }
 
 interface AttendanceRecord {
   studentId: string;
+  classId?: string;
   date: string;
   present: boolean;
 }
@@ -102,6 +104,7 @@ export default function TakeRollPage() {
     try {
       const records: AttendanceRecord[] = students.map((student) => ({
         studentId: student._id,
+        classId: student.classId,
         date,
         present: attendance[student._id] === true,
       }));
@@ -165,64 +168,73 @@ export default function TakeRollPage() {
                 <option value="desc">Z–A</option>
               </select>
             </div>
-            <div className="overflow-x-auto">
-              <table className="table w-full bg-base-100 text-base-content">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th colSpan={2}>Attendance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...students]
-                    .sort((a, b) => {
-                      const aValue = a[sortField].toLowerCase();
-                      const bValue = b[sortField].toLowerCase();
-                      return sortDirection === "asc"
-                        ? aValue.localeCompare(bValue)
-                        : bValue.localeCompare(aValue);
-                    })
-                    .map((student) => (
-                      <tr key={student._id} className="bg-base-100">
-                        <td>
-                          {student.firstName} {student.lastName}
-                        </td>
-                        <td colSpan={2}>
-                          <div className="btn-group">
-                            <button
-                              type="button"
-                              className={`btn btn-sm ${
-                                attendance[student._id] === true
-                                  ? "btn-primary"
-                                  : "btn-outline"
-                              }`}
-                              onClick={() =>
-                                handleAttendanceChange(student._id, true)
-                              }
-                            >
-                              Present
-                            </button>
-                            <button
-                              type="button"
-                              className={`btn btn-sm ${
-                                attendance[student._id] === false ||
-                                attendance[student._id] === undefined
-                                  ? "btn-error"
-                                  : "btn-outline"
-                              }`}
-                              onClick={() =>
-                                handleAttendanceChange(student._id, false)
-                              }
-                            >
-                              Absent
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+            {students.length === 0 && !loading ? (
+              <div className="text-center py-12">
+                <p className="text-gray-500 mb-4">No students found</p>
+                <p className="text-sm text-gray-400">
+                  Students must be added and assigned to classes before taking attendance
+                </p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="table w-full bg-base-100 text-base-content">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th colSpan={2}>Attendance</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...students]
+                      .sort((a, b) => {
+                        const aValue = a[sortField].toLowerCase();
+                        const bValue = b[sortField].toLowerCase();
+                        return sortDirection === "asc"
+                          ? aValue.localeCompare(bValue)
+                          : bValue.localeCompare(aValue);
+                      })
+                      .map((student) => (
+                        <tr key={student._id} className="bg-base-100">
+                          <td>
+                            {student.firstName} {student.lastName}
+                          </td>
+                          <td colSpan={2}>
+                            <div className="btn-group">
+                              <button
+                                type="button"
+                                className={`btn btn-sm ${
+                                  attendance[student._id] === true
+                                    ? "btn-primary"
+                                    : "btn-outline"
+                                }`}
+                                onClick={() =>
+                                  handleAttendanceChange(student._id, true)
+                                }
+                              >
+                                Present
+                              </button>
+                              <button
+                                type="button"
+                                className={`btn btn-sm ${
+                                  attendance[student._id] === false ||
+                                  attendance[student._id] === undefined
+                                    ? "btn-error"
+                                    : "btn-outline"
+                                }`}
+                                onClick={() =>
+                                  handleAttendanceChange(student._id, false)
+                                }
+                              >
+                                Absent
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
             {error && <div className="alert alert-error">{error}</div>}
             {success && <div className="alert alert-success">{success}</div>}
             <div className="flex justify-end">

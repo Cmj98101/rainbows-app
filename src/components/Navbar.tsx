@@ -1,11 +1,21 @@
 "use client";
 
-import { signOut, useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const [session, setSession] = useState<any>(null);
+
+  useEffect(() => {
+    // Fetch session from Supabase Auth
+    fetch("/api/auth/session", {
+      credentials: 'include', // Important: send cookies with request
+    })
+      .then((res) => res.json())
+      .then((data) => setSession(data.session))
+      .catch(() => setSession(null));
+  }, []);
 
   return (
     <nav className="bg-white shadow-lg">

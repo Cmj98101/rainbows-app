@@ -1,21 +1,31 @@
 import { NextResponse } from "next/server";
 import { getTestById, deleteTest } from "@/lib/supabase-helpers";
 import { supabaseAdmin } from "@/lib/supabase";
-import { getTempChurchId } from "@/lib/temp-auth";
+import { getCurrentChurchId, requireAuth } from "@/lib/auth-helpers";
 
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireAuth();
     const { id } = await params;
-    const churchId = await getTempChurchId();
+    const churchId = await getCurrentChurchId();
 
     const test = await getTestById(id, churchId);
     if (!test) {
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
-    return NextResponse.json(test);
+
+    // Transform Supabase format to MongoDB format for frontend compatibility
+    const formattedTest = {
+      _id: test.id,
+      name: test.name,
+      date: test.date,
+      description: test.description,
+    };
+
+    return NextResponse.json(formattedTest);
   } catch (error) {
     console.error("Error fetching test:", error);
     return NextResponse.json(
@@ -30,8 +40,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireAuth();
     const { id } = await params;
-    const churchId = await getTempChurchId();
+    const churchId = await getCurrentChurchId();
     const { name, date, description } = await request.json();
 
     const { data: test, error } = await supabaseAdmin
@@ -47,7 +58,15 @@ export async function PUT(
       return NextResponse.json({ error: "Test not found" }, { status: 404 });
     }
 
-    return NextResponse.json(test);
+    // Transform to MongoDB format
+    const formattedTest = {
+      _id: test.id,
+      name: test.name,
+      date: test.date,
+      description: test.description,
+    };
+
+    return NextResponse.json(formattedTest);
   } catch (error) {
     console.error("Error updating test:", error);
     return NextResponse.json(
@@ -62,8 +81,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    await requireAuth();
     const { id } = await params;
-    const churchId = await getTempChurchId();
+    const churchId = await getCurrentChurchId();
 
     await deleteTest(id, churchId);
     return NextResponse.json({ success: true });
