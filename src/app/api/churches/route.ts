@@ -51,7 +51,7 @@ export async function POST(request: Request) {
         phone,
         address: address || {},
         subscription: 'free',
-      })
+      } as any)
       .select()
       .single();
 
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
 
     const { data: church, error } = await supabaseAdmin
       .from('churches')
-      .update({ name, email, phone, address })
+      .update({ name, email, phone, address } as any)
       .eq('id', churchId)
       .select()
       .single();

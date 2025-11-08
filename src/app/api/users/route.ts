@@ -160,7 +160,7 @@ export async function POST(request: Request) {
         name,
         role,
         permissions: permissions || defaultPermissions,
-      })
+      } as any)
       .select(`
         *,
         church:churches (

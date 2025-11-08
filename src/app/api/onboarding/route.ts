@@ -34,7 +34,7 @@ export async function POST(request: Request) {
         phone: churchPhone,
         address: churchAddress || {},
         subscription: 'free',
-      })
+      } as any)
       .select()
       .single();
 
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
           canManageTests: true,
           canViewReports: true,
         },
-      })
+      } as any)
       .select()
       .single();
 

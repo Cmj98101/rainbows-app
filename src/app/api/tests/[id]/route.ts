@@ -47,7 +47,7 @@ export async function PUT(
 
     const { data: test, error } = await supabaseAdmin
       .from('tests')
-      .update({ name, date, description })
+      .update({ name, date, description } as any)
       .eq('id', id)
       .eq('church_id', churchId)
       .select()

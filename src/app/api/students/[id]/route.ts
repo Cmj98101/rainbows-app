@@ -179,7 +179,7 @@ export async function PUT(
       // Insert new guardians
       await supabaseAdmin
         .from('guardians')
-        .insert(validGuardians);
+        .insert(validGuardians as any);
     }
 
     // Return updated student with guardians (formatted)
