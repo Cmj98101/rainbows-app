@@ -56,7 +56,7 @@ export async function GET(request: Request) {
         .eq('teacher_id', userId);
 
       if (classAssignments && classAssignments.length > 0) {
-        const classIds = classAssignments.map(ca => ca.class_id);
+        const classIds = classAssignments.map((ca: { class_id: string }) => ca.class_id);
         query = query.in('class_id', classIds);
       } else {
         // Teacher has no classes assigned, return empty
