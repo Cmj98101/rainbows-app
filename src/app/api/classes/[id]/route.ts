@@ -68,13 +68,31 @@ export async function PUT(
     const canManage = await hasPermission('canManageClasses');
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage classes. Please contact your church administrator to request the "Manage Classes" permission.' },
         { status: 403 }
       );
     }
 
     const body = await request.json();
     const { teacherIds, ...classUpdates } = body;
+
+    // Check for duplicate class name (if name is being changed)
+    if (classUpdates.name) {
+      const { data: existingClass } = await supabaseAdmin
+        .from('classes')
+        .select('id, name')
+        .eq('church_id', churchId)
+        .eq('name', classUpdates.name)
+        .neq('id', id)
+        .single();
+
+      if (existingClass) {
+        return NextResponse.json(
+          { error: `A class named "${classUpdates.name}" already exists. Please use a different name.` },
+          { status: 400 }
+        );
+      }
+    }
 
     // Update class info if provided
     if (Object.keys(classUpdates).length > 0) {
@@ -131,7 +149,7 @@ export async function DELETE(
     const canManage = await hasPermission('canManageClasses');
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage classes. Please contact your church administrator to request the "Manage Classes" permission.' },
         { status: 403 }
       );
     }

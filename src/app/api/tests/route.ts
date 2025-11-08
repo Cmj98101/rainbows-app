@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getTests, getTestsForTeacher, createTest } from "@/lib/supabase-helpers";
 import { requireAuth, getCurrentChurchId, getCurrentUserId, hasRole, hasPermission } from "@/lib/auth-helpers";
 import { toSnakeCase } from "@/lib/case-converters";
+import { supabaseAdmin } from "@/lib/supabase";
 
 export async function GET(request: Request) {
   try {
@@ -91,7 +92,7 @@ export async function POST(request: Request) {
     const canManageTests = await hasPermission('canManageTests');
     if (!canManageTests) {
       return NextResponse.json(
-        { error: 'Insufficient permissions to create tests' },
+        { error: 'You do not have permission to create tests. Please contact your church administrator to request the "Manage Tests" permission.' },
         { status: 403 }
       );
     }
@@ -106,6 +107,23 @@ export async function POST(request: Request) {
     if (!classId) {
       return NextResponse.json(
         { error: 'class_id is required - all tests must be associated with a class' },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate test (same name and date in same class)
+    const { data: existingTest } = await supabaseAdmin
+      .from('tests')
+      .select('id, name, date')
+      .eq('church_id', churchId)
+      .eq('class_id', classId)
+      .eq('name', testData.name)
+      .eq('date', date)
+      .single();
+
+    if (existingTest) {
+      return NextResponse.json(
+        { error: `A test named "${testData.name}" already exists for this class on ${new Date(date).toLocaleDateString()}. Please use a different name or date.` },
         { status: 400 }
       );
     }

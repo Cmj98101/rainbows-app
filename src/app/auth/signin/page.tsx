@@ -1,13 +1,21 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 export default function SignIn() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Check for session expiration error
+  useEffect(() => {
+    if (searchParams.get('error') === 'session_expired') {
+      setError('Your session has expired. Please sign in again.');
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();

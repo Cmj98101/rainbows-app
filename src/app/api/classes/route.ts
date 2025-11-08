@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getClasses, createClass, getClassesForTeacher } from '@/lib/supabase-helpers';
 import { getCurrentChurchId, requireAuth, hasPermission, hasRole, getCurrentUserId } from '@/lib/auth-helpers';
+import { supabaseAdmin } from '@/lib/supabase';
 
 /**
  * GET /api/classes
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to create classes. Please contact your church administrator to request the "Manage Classes" permission.' },
         { status: 403 }
       );
     }
@@ -56,6 +57,21 @@ export async function POST(request: Request) {
     if (!name) {
       return NextResponse.json(
         { error: 'Name is required' },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate class name
+    const { data: existingClass } = await supabaseAdmin
+      .from('classes')
+      .select('id, name')
+      .eq('church_id', churchId)
+      .eq('name', name)
+      .single();
+
+    if (existingClass) {
+      return NextResponse.json(
+        { error: `A class named "${name}" already exists. Please use a different name.` },
         { status: 400 }
       );
     }

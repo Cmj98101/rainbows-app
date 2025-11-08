@@ -85,8 +85,19 @@ export async function DELETE(
     const { id } = await params;
     const churchId = await getCurrentChurchId();
 
+    // Get count of test results that will be deleted
+    const { count: testResultCount } = await supabaseAdmin
+      .from('test_results')
+      .select('id', { count: 'exact' })
+      .eq('test_id', id);
+
     await deleteTest(id, churchId);
-    return NextResponse.json({ success: true });
+
+    const message = testResultCount && testResultCount > 0
+      ? `Test deleted successfully along with ${testResultCount} test result${testResultCount !== 1 ? 's' : ''}`
+      : "Test deleted successfully";
+
+    return NextResponse.json({ success: true, message });
   } catch (error) {
     console.error("Error deleting test:", error);
     return NextResponse.json(

@@ -79,6 +79,34 @@ export async function PUT(
     // Handle guardians separately (they're in a separate table now)
     const { guardians, ...studentUpdates } = data;
 
+    // Check for duplicate student name (if name is being changed)
+    if (studentUpdates.firstName || studentUpdates.lastName) {
+      // Get current student to check if name is actually changing
+      const currentStudent = await getStudentById(id, churchId);
+
+      const newFirstName = studentUpdates.firstName || currentStudent?.first_name;
+      const newLastName = studentUpdates.lastName || currentStudent?.last_name;
+
+      // Only check for duplicates if the name is actually changing
+      if (newFirstName !== currentStudent?.first_name || newLastName !== currentStudent?.last_name) {
+        const { data: existingStudent } = await supabaseAdmin
+          .from('students')
+          .select('id, first_name, last_name')
+          .eq('church_id', churchId)
+          .eq('first_name', newFirstName)
+          .eq('last_name', newLastName)
+          .neq('id', id)
+          .single();
+
+        if (existingStudent) {
+          return NextResponse.json(
+            { error: `A student named ${newFirstName} ${newLastName} already exists. Please use a different name.` },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Validate student email format if provided
     if (studentUpdates.email && !EMAIL_REGEX.test(studentUpdates.email)) {
       return NextResponse.json(
@@ -198,8 +226,31 @@ export async function DELETE(
     const { id } = await params;
     const churchId = await getCurrentChurchId();
 
+    // Get counts of related data that will be deleted
+    const [attendanceCount, testResultCount] = await Promise.all([
+      supabaseAdmin
+        .from('attendance')
+        .select('id', { count: 'exact' })
+        .eq('student_id', id)
+        .then(({ count }) => count || 0),
+      supabaseAdmin
+        .from('test_results')
+        .select('id', { count: 'exact' })
+        .eq('student_id', id)
+        .then(({ count }) => count || 0),
+    ]);
+
     await deleteStudent(id, churchId);
-    return NextResponse.json({ message: "Student deleted successfully" });
+
+    const cascadeInfo = [];
+    if (attendanceCount > 0) cascadeInfo.push(`${attendanceCount} attendance record${attendanceCount !== 1 ? 's' : ''}`);
+    if (testResultCount > 0) cascadeInfo.push(`${testResultCount} test result${testResultCount !== 1 ? 's' : ''}`);
+
+    const message = cascadeInfo.length > 0
+      ? `Student deleted successfully along with ${cascadeInfo.join(' and ')}`
+      : "Student deleted successfully";
+
+    return NextResponse.json({ message });
   } catch (error) {
     console.error("Error deleting student:", error);
     return NextResponse.json(

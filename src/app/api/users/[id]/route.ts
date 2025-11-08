@@ -15,7 +15,7 @@ export async function GET(
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage users. Please contact your church administrator to request the "Manage Users" permission.' },
         { status: 403 }
       );
     }
@@ -68,7 +68,7 @@ export async function PUT(
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage users. Please contact your church administrator to request the "Manage Users" permission.' },
         { status: 403 }
       );
     }
@@ -152,7 +152,7 @@ export async function DELETE(
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage users. Please contact your church administrator to request the "Manage Users" permission.' },
         { status: 403 }
       );
     }

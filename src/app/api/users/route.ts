@@ -15,7 +15,7 @@ export async function GET() {
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage users. Please contact your church administrator to request the "Manage Users" permission.' },
         { status: 403 }
       );
     }
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
 
     if (!canManage) {
       return NextResponse.json(
-        { error: 'Insufficient permissions' },
+        { error: 'You do not have permission to manage users. Please contact your church administrator to request the "Manage Users" permission.' },
         { status: 403 }
       );
     }
@@ -79,6 +79,20 @@ export async function POST(request: Request) {
     if (!EMAIL_REGEX.test(email)) {
       return NextResponse.json(
         { error: 'Invalid email format' },
+        { status: 400 }
+      );
+    }
+
+    // Check for duplicate email
+    const { data: existingUser } = await supabaseAdmin
+      .from('users')
+      .select('id, email')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      return NextResponse.json(
+        { error: `A user with email "${email}" already exists.` },
         { status: 400 }
       );
     }

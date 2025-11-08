@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getStudentsWithGuardians, createStudent, getStudentsForTeacher } from "@/lib/supabase-helpers";
 import { getCurrentChurchId, requireAuth, hasRole, getCurrentUserId } from "@/lib/auth-helpers";
 import { toSnakeCase, studentFromDb } from "@/lib/case-converters";
+import { supabaseAdmin } from "@/lib/supabase";
 
 // Email validation regex
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -105,6 +106,22 @@ export async function POST(request: Request) {
     const body = await request.json();
 
     const { guardians, birthday, ...studentData } = body;
+
+    // Check for duplicate student name
+    const { data: existingStudent } = await supabaseAdmin
+      .from('students')
+      .select('id, first_name, last_name')
+      .eq('church_id', churchId)
+      .eq('first_name', studentData.firstName)
+      .eq('last_name', studentData.lastName)
+      .single();
+
+    if (existingStudent) {
+      return NextResponse.json(
+        { error: `A student named ${studentData.firstName} ${studentData.lastName} already exists. Please use a different name or check if this is a duplicate.` },
+        { status: 400 }
+      );
+    }
 
     // Validate birthday if provided
     if (birthday) {
