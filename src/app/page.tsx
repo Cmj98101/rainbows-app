@@ -44,14 +44,14 @@ async function getDashboardData() {
 
       if (!classAssignments || classAssignments.length === 0) {
         // Teacher has no classes assigned
-        return {
+        stats = {
           totalStudents: 0,
           todayAttendanceRate: 0,
           testPassRate: 0,
           recentTests: [],
           recentActivity: [],
         };
-      }
+      } else {
 
       const classIds = classAssignments.map(ca => ca.class_id);
 
@@ -117,13 +117,14 @@ async function getDashboardData() {
           )
         : 0;
 
-      stats = {
-        totalStudents: totalStudents || 0,
-        todayAttendanceRate: attendanceRate,
-        testPassRate,
-        recentTests,
-        recentActivity: [],
-      };
+        stats = {
+          totalStudents: totalStudents || 0,
+          todayAttendanceRate: attendanceRate,
+          testPassRate,
+          recentTests,
+          recentActivity: [],
+        };
+      }
     } else {
       // For admins, get all stats
       const allStats = await getDashboardStats(churchId);
@@ -193,7 +194,7 @@ export default async function Home() {
     redirect("/auth/signin");
   }
 
-  const { stats, classSummary, isAdmin } = dashboardData;
+  const { stats, classSummary, isAdmin = false } = dashboardData;
 
   return (
     <main className="p-4 max-w-7xl mx-auto space-y-6">

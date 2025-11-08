@@ -15,4 +15,6 @@ export interface Student {
   parentRelationship?: string;
   email?: string;
   phone?: string;
+  className?: string;
+  classId?: string;
 }

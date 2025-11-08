@@ -18,7 +18,7 @@ async function getTests() {
     if (isAdmin) {
       const response = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/tests?groupByClass=true`, {
         headers: {
-          'Cookie': `supabase-auth-token=${session.access_token}`
+          'Cookie': `supabase-auth-token=${session.accessToken}`
         },
         cache: 'no-store'
       });
