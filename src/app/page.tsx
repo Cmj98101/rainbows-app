@@ -175,13 +175,15 @@ export default async function Home() {
     redirect("/auth/signin");
   }
 
-  let data;
+  let dashboardData;
   try {
-    data = await getDashboardData();
+    dashboardData = await getDashboardData();
   } catch (error) {
     // If auth fails, redirect to signin
     redirect("/auth/signin");
   }
+
+  const { stats, classSummary, isAdmin } = dashboardData;
 
   return (
     <main className="p-4 max-w-7xl mx-auto space-y-6">
@@ -195,19 +197,19 @@ export default async function Home() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="stat bg-base-100 shadow rounded-lg">
           <div className="stat-title">Total Students</div>
-          <div className="stat-value text-primary">{data.stats.totalStudents || 0}</div>
+          <div className="stat-value text-primary">{stats.totalStudents || 0}</div>
           <div className="stat-desc">Across all classes</div>
         </div>
         <div className="stat bg-base-100 shadow rounded-lg">
           <div className="stat-title">Recent Tests</div>
-          <div className="stat-value text-2xl">{data.stats.recentTests?.length || 0}</div>
+          <div className="stat-value text-2xl">{stats.recentTests?.length || 0}</div>
           <div className="stat-desc">
-            {data.stats.testPassRate}% average pass rate
+            {stats.testPassRate}% average pass rate
           </div>
         </div>
         <div className="stat bg-base-100 shadow rounded-lg">
           <div className="stat-title">Classes</div>
-          <div className="stat-value text-2xl">{data.classSummary?.length || 0}</div>
+          <div className="stat-value text-2xl">{classSummary?.length || 0}</div>
           <div className="stat-desc">Active classes</div>
         </div>
       </div>
@@ -226,7 +228,7 @@ export default async function Home() {
             <Link href="/tests/add" className="btn btn-accent">
               Add Test
             </Link>
-            {data.isAdmin && (
+            {isAdmin && (
               <>
                 <Link href="/admin/classes/add" className="btn btn-ghost">
                   Create Class
@@ -241,7 +243,7 @@ export default async function Home() {
       </div>
 
       {/* Class Summary for Admins */}
-      {data.isAdmin && data.classSummary && data.classSummary.length > 0 && (
+      {isAdmin && classSummary && classSummary.length > 0 && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <div className="flex justify-between items-center mb-4">
@@ -251,7 +253,7 @@ export default async function Home() {
               </Link>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {data.classSummary.map((cls: any) => (
+              {classSummary.map((cls: any) => (
                 <div key={cls.id} className="card bg-base-200">
                   <div className="card-body">
                     <h3 className="card-title text-lg">{cls.name}</h3>
@@ -290,7 +292,7 @@ export default async function Home() {
       )}
 
       {/* Recent Tests */}
-      {data.stats.recentTests && data.stats.recentTests.length > 0 && (
+      {stats.recentTests && stats.recentTests.length > 0 && (
         <div className="card bg-base-100 shadow-xl">
           <div className="card-body">
             <div className="flex justify-between items-center mb-4">
@@ -310,7 +312,7 @@ export default async function Home() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.stats.recentTests.slice(0, 5).map((test: any) => (
+                  {stats.recentTests.slice(0, 5).map((test: any) => (
                     <tr key={test.id}>
                       <td className="font-medium">{test.name}</td>
                       <td>{new Date(test.date).toLocaleDateString()}</td>
