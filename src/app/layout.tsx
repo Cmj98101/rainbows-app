@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={inter.className} suppressHydrationWarning>
         <SessionMonitor />
         <LayoutContent>{children}</LayoutContent>
         <Toaster position="top-right" richColors />

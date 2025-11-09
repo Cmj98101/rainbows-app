@@ -695,7 +695,7 @@ export async function getUserById(userId: string) {
 }
 
 /**
- * Get user by email
+ * Get user by email (case-insensitive)
  */
 export async function getUserByEmail(email: string) {
   const { data, error } = await supabaseAdmin
@@ -704,7 +704,7 @@ export async function getUserByEmail(email: string) {
       *,
       church:churches (*)
     `)
-    .eq('email', email)
+    .ilike('email', email)
     .single();
 
   if (error) {
