@@ -25,6 +25,7 @@ export default function ClassesPage() {
   const [classes, setClasses] = useState<Class[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [deletingClassId, setDeletingClassId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchClasses();
@@ -63,22 +64,76 @@ export default function ClassesPage() {
   };
 
   const handleDelete = async (classId: string, className: string) => {
-    if (!confirm(`Are you sure you want to delete ${className}?`)) {
-      return;
-    }
-
+    setDeletingClassId(classId);
     try {
+      // First, get the class details to check for students and tests
+      const classResponse = await fetch(`/api/classes/${classId}`);
+      if (!classResponse.ok) {
+        throw new Error("Failed to fetch class details");
+      }
+
+      const classData = await classResponse.json();
+
+      // Count students in this class
+      const studentsResponse = await fetch(`/api/students?classId=${classId}`);
+      const studentsData = await studentsResponse.json();
+      const studentCount = Array.isArray(studentsData) ? studentsData.length : 0;
+
+      // Count tests for this class
+      const testsResponse = await fetch(`/api/tests`);
+      const testsData = await testsResponse.json();
+      const classTests = Array.isArray(testsData)
+        ? testsData.filter((t: any) => t.classId === classId)
+        : [];
+      const testCount = classTests.length;
+
+      // Build confirmation message
+      let message = `Are you sure you want to delete "${className}"?\n\n`;
+
+      if (studentCount > 0) {
+        message += `⚠️ ${studentCount} student${studentCount !== 1 ? 's' : ''} will be moved to "Unassigned"\n`;
+      }
+
+      if (testCount > 0) {
+        message += `⚠️ ${testCount} test${testCount !== 1 ? 's' : ''} and their results will be permanently deleted\n`;
+      }
+
+      if (studentCount === 0 && testCount === 0) {
+        message += `This class has no students or tests.`;
+      }
+
+      if (!confirm(message)) {
+        setDeletingClassId(null);
+        return;
+      }
+
+      // Proceed with deletion
       const response = await fetch(`/api/classes/${classId}`, {
         method: "DELETE",
       });
 
       if (!response.ok) {
-        throw new Error("Failed to delete class");
+        const data = await response.json();
+        throw new Error(data.error || "Failed to delete class");
       }
 
+      const result = await response.json();
+
+      // Show success message with details
+      let successMsg = `"${className}" deleted successfully.`;
+      if (result.studentsUnassigned > 0) {
+        successMsg += `\n${result.studentsUnassigned} student${result.studentsUnassigned !== 1 ? 's' : ''} moved to Unassigned.`;
+      }
+      if (result.testsDeleted > 0) {
+        successMsg += `\n${result.testsDeleted} test${result.testsDeleted !== 1 ? 's' : ''} deleted.`;
+      }
+
+      alert(successMsg);
       fetchClasses();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete class");
+    } finally {
+      setDeletingClassId(null);
     }
   };
 
@@ -185,10 +240,20 @@ export default function ClassesPage() {
                 </Link>
                 <button
                   onClick={() => handleDelete(classItem.id, classItem.name)}
+                  disabled={deletingClassId === classItem.id}
                   className="btn btn-ghost btn-sm text-error"
                 >
-                  <TrashIcon className="h-4 w-4" />
-                  Delete
+                  {deletingClassId === classItem.id ? (
+                    <>
+                      <span className="loading loading-spinner loading-xs"></span>
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <TrashIcon className="h-4 w-4" />
+                      Delete
+                    </>
+                  )}
                 </button>
               </div>
             </div>

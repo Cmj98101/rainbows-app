@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { Student } from "@/types/student";
 import StudentsTable from "./StudentsTable";
 import { getSession, getCurrentChurchId, getCurrentUserId, hasRole } from "@/lib/auth-helpers";
-import { getStudentsWithGuardians, getStudentsForTeacher } from "@/lib/supabase-helpers";
+import { getStudentsWithGuardians, getStudentsForTeacher, getClasses } from "@/lib/supabase-helpers";
 
 async function getStudents() {
   try {
@@ -54,27 +54,47 @@ async function getStudents() {
 
     // If admin, group students by class
     if (isAdmin) {
+      // First, fetch all classes to ensure we show every class even if empty
+      const allClasses = await getClasses(churchId);
+
       const groupedByClass: Record<string, any> = {};
 
-      formattedStudents.forEach((student) => {
-        const classKey = student.classId || 'unassigned';
-        const className = student.className || 'Unassigned Students';
-
-        if (!groupedByClass[classKey]) {
-          groupedByClass[classKey] = {
-            classId: student.classId,
-            className: className,
-            students: [],
-          };
-        }
-
-        groupedByClass[classKey].students.push(student);
+      // Initialize with all existing classes (with 0 students)
+      allClasses.forEach((classItem: any) => {
+        groupedByClass[classItem.id] = {
+          classId: classItem.id,
+          className: classItem.name,
+          students: [],
+        };
       });
 
-      // Convert to array and sort by class name
-      const groupedArray = Object.values(groupedByClass).sort((a, b) =>
-        a.className.localeCompare(b.className)
-      );
+      // Add unassigned students group
+      groupedByClass['unassigned'] = {
+        classId: null,
+        className: 'Unassigned Students',
+        students: [],
+      };
+
+      // Now add students to their respective classes
+      formattedStudents.forEach((student) => {
+        const classKey = student.classId || 'unassigned';
+
+        if (groupedByClass[classKey]) {
+          groupedByClass[classKey].students.push(student);
+        } else {
+          // If class doesn't exist anymore (shouldn't happen), add to unassigned
+          groupedByClass['unassigned'].students.push(student);
+        }
+      });
+
+      // Convert to array and sort - unassigned students first, then alphabetically
+      const groupedArray = Object.values(groupedByClass).sort((a, b) => {
+        // Always put unassigned students at the top
+        if (a.classId === null && b.classId !== null) return -1;
+        if (a.classId !== null && b.classId === null) return 1;
+        // Otherwise sort alphabetically by class name
+        return a.className.localeCompare(b.className);
+      });
 
       return {
         grouped: groupedArray,

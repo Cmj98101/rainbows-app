@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import confetti from "canvas-confetti";
 
 interface Guardian {
   name: string;
@@ -35,6 +36,7 @@ export default function AddStudentPage() {
   const [loading, setLoading] = useState(false);
   const [loadingClasses, setLoadingClasses] = useState(true);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const [classes, setClasses] = useState<Class[]>([]);
   const [student, setStudent] = useState({
     firstName: "",
@@ -54,6 +56,38 @@ export default function AddStudentPage() {
     ],
     notes: "",
   });
+
+  const celebrateNewStudent = () => {
+    const duration = 3000;
+    const animationEnd = Date.now() + duration;
+    const defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
+
+    const randomInRange = (min: number, max: number) => {
+      return Math.random() * (max - min) + min;
+    };
+
+    const interval = setInterval(() => {
+      const timeLeft = animationEnd - Date.now();
+
+      if (timeLeft <= 0) {
+        return clearInterval(interval);
+      }
+
+      const particleCount = 50 * (timeLeft / duration);
+
+      // Launch confetti from two sides
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.1, 0.3), y: Math.random() - 0.2 },
+      });
+      confetti({
+        ...defaults,
+        particleCount,
+        origin: { x: randomInRange(0.7, 0.9), y: Math.random() - 0.2 },
+      });
+    }, 250);
+  };
 
   useEffect(() => {
     // Fetch available classes
@@ -163,8 +197,15 @@ export default function AddStudentPage() {
         throw new Error(errorData.error || "Failed to create student");
       }
 
-      router.push("/students");
-      router.refresh();
+      // Mark as successful and celebrate with confetti!
+      setSuccess(true);
+      celebrateNewStudent();
+
+      // Wait a moment for the confetti to start, then navigate
+      setTimeout(() => {
+        router.push("/students");
+        router.refresh();
+      }, 1500);
     } catch (err) {
       console.error("Error creating student:", err);
       setError(err instanceof Error ? err.message : "Failed to create student");
@@ -441,10 +482,22 @@ export default function AddStudentPage() {
           </button>
           <button
             type="submit"
-            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            disabled={loading || loadingClasses || classes.length === 0}
+            className={`px-4 py-2 rounded disabled:cursor-not-allowed transition-colors ${
+              success
+                ? "bg-green-500 text-white"
+                : "bg-blue-500 text-white hover:bg-blue-600 disabled:bg-gray-400"
+            }`}
+            disabled={loading || loadingClasses || classes.length === 0 || success}
           >
-            {loading ? "Creating..." : loadingClasses ? "Loading..." : classes.length === 0 ? "No Classes Available" : "Create Student"}
+            {success
+              ? "Student Created! 🎉"
+              : loading
+              ? "Creating..."
+              : loadingClasses
+              ? "Loading..."
+              : classes.length === 0
+              ? "No Classes Available"
+              : "Create Student"}
           </button>
         </div>
       </form>

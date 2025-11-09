@@ -269,13 +269,21 @@ export default function StudentsTable({ data }: StudentsTableProps) {
                 : group.students;
               const sortedStudents = sortStudents(groupStudents);
 
-              if (searchQuery && groupStudents.length === 0) return null;
+              // Only hide in search if no students match AND it's not an empty class
+              if (searchQuery && groupStudents.length === 0 && group.students.length > 0) return null;
+
+              const isUnassigned = group.classId === null;
+              const isEmpty = sortedStudents.length === 0;
 
               return (
                 <motion.div
                   key={group.classId || 'unassigned'}
                   variants={staggerItem}
-                  className="collapse collapse-arrow bg-base-100 shadow-xl"
+                  className={`collapse collapse-arrow shadow-xl ${
+                    isUnassigned
+                      ? 'bg-warning/10 border-2 border-warning'
+                      : 'bg-base-100'
+                  }`}
                   whileHover={{
                     boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)"
                   }}
@@ -287,29 +295,58 @@ export default function StudentsTable({ data }: StudentsTableProps) {
                     onChange={() => toggleAccordion(group.classId || 'unassigned')}
                   />
                   <div className="collapse-title text-xl font-medium flex items-center justify-between">
-                    <span>{group.className}</span>
-                    <span className="badge badge-lg badge-primary">
+                    <div className="flex items-center gap-2">
+                      {isUnassigned && (
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-6 w-6 text-warning"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                          />
+                        </svg>
+                      )}
+                      <span>{group.className}</span>
+                    </div>
+                    <span className={`badge badge-lg ${isUnassigned ? 'badge-warning' : 'badge-primary'}`}>
                       {sortedStudents.length} student{sortedStudents.length !== 1 ? 's' : ''}
                     </span>
                   </div>
                   <div className="collapse-content">
-                    <div className="overflow-x-auto">
-                      <table className="table w-full">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Guardian</th>
-                            <th>Phone</th>
-                            <th className="text-right">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {sortedStudents.map((student) => (
-                            <StudentRow key={student._id} student={student} />
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
+                    {isEmpty ? (
+                      <div className="text-center py-8 text-gray-500">
+                        <p>No students in this class</p>
+                        {!isUnassigned && (
+                          <Link href="/students/add" className="btn btn-sm btn-ghost mt-2">
+                            Add Student
+                          </Link>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="table w-full">
+                          <thead>
+                            <tr>
+                              <th>Name</th>
+                              <th>Guardian</th>
+                              <th>Phone</th>
+                              <th className="text-right">Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {sortedStudents.map((student) => (
+                              <StudentRow key={student._id} student={student} />
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
                   </div>
                 </motion.div>
               );

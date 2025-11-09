@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { PlusIcon, PencilIcon, TrashIcon } from "@heroicons/react/24/outline";
+import { useRouter } from "next/navigation";
+import { PlusIcon, PencilIcon, TrashIcon, UserIcon } from "@heroicons/react/24/outline";
 import { TableRowSkeleton } from "@/components/LoadingStates";
 import { motion } from "framer-motion";
 import { PageTransition } from "@/components/Animations";
@@ -24,12 +25,16 @@ interface User {
 }
 
 export default function UsersPage() {
+  const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentUserRole, setCurrentUserRole] = useState<string>("");
+  const [impersonating, setImpersonating] = useState<string | null>(null);
 
   useEffect(() => {
     fetchUsers();
+    fetchCurrentUser();
   }, []);
 
   const fetchUsers = async () => {
@@ -46,6 +51,46 @@ export default function UsersPage() {
       setError(err instanceof Error ? err.message : "Failed to load users");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchCurrentUser = async () => {
+    try {
+      const response = await fetch("/api/auth/session");
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUserRole(data.session?.user?.role || "");
+      }
+    } catch (err) {
+      console.error("Failed to fetch current user:", err);
+    }
+  };
+
+  const handleImpersonate = async (userId: string, userName: string) => {
+    if (!confirm(`Start acting as ${userName}?`)) {
+      return;
+    }
+
+    setImpersonating(userId);
+    try {
+      const response = await fetch("/api/admin/impersonate", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ userId }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "Failed to start impersonation");
+      }
+
+      // Force a full page reload to refresh all components with new session
+      window.location.href = "/";
+    } catch (err) {
+      alert(err instanceof Error ? err.message : "Failed to start impersonation");
+      setImpersonating(null);
     }
   };
 
@@ -190,6 +235,20 @@ export default function UsersPage() {
                   </td>
                   <td className="text-right">
                     <div className="flex justify-end gap-2">
+                      {currentUserRole === "church_admin" && (
+                        <button
+                          onClick={() => handleImpersonate(user.id, user.name)}
+                          disabled={impersonating === user.id}
+                          className="btn btn-ghost btn-sm text-info"
+                          title="Act as this user"
+                        >
+                          {impersonating === user.id ? (
+                            <span className="loading loading-spinner loading-xs"></span>
+                          ) : (
+                            <UserIcon className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                       <Link
                         href={`/admin/users/${user.id}/edit`}
                         className="btn btn-ghost btn-sm"

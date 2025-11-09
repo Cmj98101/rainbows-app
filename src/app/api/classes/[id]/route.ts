@@ -135,6 +135,8 @@ export async function PUT(
 /**
  * DELETE /api/classes/[id]
  * Delete a class
+ * - Sets all students in this class to unassigned (class_id = NULL)
+ * - Deletes all tests associated with this class
  */
 export async function DELETE(
   request: Request,
@@ -154,41 +156,63 @@ export async function DELETE(
       );
     }
 
-    // Check if class has students
+    // Get counts for confirmation message
     const { count: studentCount } = await supabaseAdmin
       .from('students')
       .select('id', { count: 'exact' })
       .eq('class_id', id)
       .eq('church_id', churchId);
 
-    if (studentCount && studentCount > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete class with ${studentCount} student${studentCount !== 1 ? 's' : ''}. Please reassign or remove the students first.`
-        },
-        { status: 400 }
-      );
-    }
-
-    // Check if class has tests
     const { count: testCount } = await supabaseAdmin
       .from('tests')
       .select('id', { count: 'exact' })
       .eq('class_id', id)
       .eq('church_id', churchId);
 
-    if (testCount && testCount > 0) {
-      return NextResponse.json(
-        {
-          error: `Cannot delete class with ${testCount} test${testCount !== 1 ? 's' : ''}. Please delete the tests first.`
-        },
-        { status: 400 }
-      );
+    // Unassign all students (set class_id to NULL)
+    if (studentCount && studentCount > 0) {
+      await supabaseAdmin
+        .from('students')
+        .update({ class_id: null })
+        .eq('class_id', id)
+        .eq('church_id', churchId);
     }
 
+    // Delete all tests associated with this class
+    if (testCount && testCount > 0) {
+      // First delete all test results for these tests
+      const { data: tests } = await supabaseAdmin
+        .from('tests')
+        .select('id')
+        .eq('class_id', id)
+        .eq('church_id', churchId);
+
+      if (tests && tests.length > 0) {
+        const testIds = tests.map(t => t.id);
+
+        // Delete test results first (due to foreign key constraint)
+        await supabaseAdmin
+          .from('test_results')
+          .delete()
+          .in('test_id', testIds);
+      }
+
+      // Now delete the tests
+      await supabaseAdmin
+        .from('tests')
+        .delete()
+        .eq('class_id', id)
+        .eq('church_id', churchId);
+    }
+
+    // Finally, delete the class
     await deleteClass(id, churchId);
 
-    return NextResponse.json({ message: 'Class deleted successfully' });
+    return NextResponse.json({
+      message: 'Class deleted successfully',
+      studentsUnassigned: studentCount || 0,
+      testsDeleted: testCount || 0,
+    });
   } catch (error) {
     console.error('Error deleting class:', error);
     return NextResponse.json(

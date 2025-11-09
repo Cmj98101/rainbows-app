@@ -19,6 +19,7 @@ export async function GET(request: Request) {
     // Check query params
     const { searchParams } = new URL(request.url);
     const groupByClass = searchParams.get("groupByClass") === "true";
+    const classIdFilter = searchParams.get("classId");
 
     // Check if user is a teacher (non-admin)
     const isTeacher = await hasRole('teacher');
@@ -34,6 +35,12 @@ export async function GET(request: Request) {
       // Admins can see all students
       students = await getStudentsWithGuardians(churchId);
       console.log(`Found ${students.length} students`);
+    }
+
+    // Filter by classId if specified
+    if (classIdFilter) {
+      students = students.filter((s: any) => s.class_id === classIdFilter);
+      console.log(`Filtered to ${students.length} students for class ${classIdFilter}`);
     }
 
     // Format students to match MongoDB format for frontend compatibility

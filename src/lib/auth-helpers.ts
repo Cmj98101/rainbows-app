@@ -6,10 +6,12 @@
 
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from './supabase';
-import { getUserByEmail } from './supabase-helpers';
+import { getUserByEmail, getUserById } from './supabase-helpers';
 
 /**
  * Get the current authenticated user's session
+ * Supports impersonation: if a church_admin is impersonating another user,
+ * this will return the impersonated user's session
  */
 export async function getSession() {
   const cookieStore = await cookies();
@@ -30,6 +32,40 @@ export async function getSession() {
     // Get user profile from our users table
     const userProfile = await getUserByEmail(user.email!);
 
+    // Check if we're impersonating another user
+    const impersonatingUserId = cookieStore.get('impersonating-user-id')?.value;
+    const originalUserId = cookieStore.get('original-user-id')?.value;
+
+    if (impersonatingUserId && originalUserId) {
+      // Verify the original user is a church_admin
+      if (userProfile?.role === 'church_admin') {
+        try {
+          // Get the impersonated user's profile
+          const impersonatedProfile = await getUserById(impersonatingUserId);
+
+          return {
+            user: {
+              id: impersonatedProfile.id,
+              email: impersonatedProfile.email,
+              ...impersonatedProfile,
+            },
+            accessToken,
+            refreshToken,
+            impersonation: {
+              isImpersonating: true,
+              originalUserId: originalUserId,
+              originalUserName: userProfile.name,
+              impersonatedUserId: impersonatingUserId,
+              impersonatedUserName: impersonatedProfile.name,
+            }
+          };
+        } catch (impersonationError) {
+          console.error('Error loading impersonated user, falling back to original:', impersonationError);
+          // Fall through to return original user session
+        }
+      }
+    }
+
     return {
       user: {
         id: user.id,
@@ -38,6 +74,9 @@ export async function getSession() {
       },
       accessToken,
       refreshToken,
+      impersonation: {
+        isImpersonating: false,
+      }
     };
   } catch (error) {
     console.error('Error getting session:', error);
