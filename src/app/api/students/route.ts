@@ -64,7 +64,10 @@ export async function GET(request: Request) {
         isEmergencyContact: g.is_emergency_contact,
       })) || [],
       attendance: student.attendance || [],
-      testResults: student.test_results || [],
+      testResults: student.test_results?.map((tr: any) => ({
+        testId: tr.test_id,
+        status: tr.status,
+      })) || [],
     }));
 
     // If admin wants grouped data

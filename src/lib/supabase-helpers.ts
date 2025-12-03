@@ -180,6 +180,11 @@ export async function getStudentsWithGuardians(churchId: string, classId?: strin
         id,
         name,
         age_group
+      ),
+      test_results (
+        id,
+        test_id,
+        status
       )
     `)
     .eq('church_id', churchId)
@@ -217,6 +222,11 @@ export async function getStudentsForTeacher(teacherId: string, churchId: string)
         id,
         name,
         age_group
+      ),
+      test_results (
+        id,
+        test_id,
+        status
       )
     `)
     .eq('church_id', churchId)
