@@ -1,21 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   HomeIcon,
   UserGroupIcon,
   CalendarIcon,
   ClipboardDocumentCheckIcon,
-  ChartBarIcon,
   ArrowRightOnRectangleIcon,
   AcademicCapIcon,
   UsersIcon,
 } from "@heroicons/react/24/outline";
+import { useSession } from "@/contexts/SessionContext";
 
 function SignOutButton() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
 
   const handleSignOut = async () => {
@@ -23,9 +21,9 @@ function SignOutButton() {
     try {
       await fetch("/api/auth/signout", {
         method: "POST",
-        credentials: 'include', // Send cookies
+        credentials: 'include',
       });
-      window.location.href = "/auth/signin"; // Full page reload to clear session
+      window.location.href = "/auth/signin";
     } catch (error) {
       console.error("Sign out error:", error);
       setLoading(false);
@@ -52,27 +50,7 @@ function closeDrawer() {
 }
 
 export function Sidebar() {
-  const [session, setSession] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    // Fetch session on mount
-    fetch("/api/auth/session", {
-      credentials: 'include', // Important: send cookies with request
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    })
-      .then(async (res) => {
-        const data = await res.json();
-        if (data.session) {
-          setSession(data.session);
-        }
-        return data;
-      })
-      .catch((error) => console.error("Failed to fetch session:", error))
-      .finally(() => setLoading(false));
-  }, []);
+  const { session, loading } = useSession();
 
   const canManageUsers = session?.user?.permissions?.canManageUsers;
   const canManageClasses = session?.user?.permissions?.canManageClasses;

@@ -6,6 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import SessionMonitor from "@/components/SessionMonitor";
 import { Toaster } from "sonner";
 import ImpersonationBannerWrapper from "@/components/ImpersonationBannerWrapper";
+import { SessionProvider } from "@/contexts/SessionContext";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,10 +23,12 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className} suppressHydrationWarning>
-        <SessionMonitor />
-        <ImpersonationBannerWrapper />
-        <LayoutContent>{children}</LayoutContent>
-        <Toaster position="top-right" richColors />
+        <SessionProvider>
+          <SessionMonitor />
+          <ImpersonationBannerWrapper />
+          <LayoutContent>{children}</LayoutContent>
+          <Toaster position="top-right" richColors />
+        </SessionProvider>
         <Analytics />
       </body>
     </html>
