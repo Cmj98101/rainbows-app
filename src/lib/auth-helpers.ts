@@ -4,16 +4,15 @@
  * Provides authentication and session management using Supabase Auth
  */
 
+import { cache } from 'react';
 import { cookies } from 'next/headers';
 import { supabaseAdmin } from './supabase';
 import { getUserByEmail, getUserById } from './supabase-helpers';
 
 /**
- * Get the current authenticated user's session
- * Supports impersonation: if a church_admin is impersonating another user,
- * this will return the impersonated user's session
+ * Internal function to fetch session - wrapped with React cache for request deduplication
  */
-export async function getSession() {
+async function fetchSession() {
   const cookieStore = await cookies();
   const accessToken = cookieStore.get('sb-access-token')?.value;
   const refreshToken = cookieStore.get('sb-refresh-token')?.value;
@@ -83,6 +82,16 @@ export async function getSession() {
     return null;
   }
 }
+
+/**
+ * Get the current authenticated user's session
+ * Supports impersonation: if a church_admin is impersonating another user,
+ * this will return the impersonated user's session
+ *
+ * Uses React cache() for request-level deduplication - multiple calls
+ * within the same request will only make one Supabase auth call.
+ */
+export const getSession = cache(fetchSession);
 
 /**
  * Get the current user's church ID
